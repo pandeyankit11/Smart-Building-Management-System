@@ -1,0 +1,14 @@
+# Compiled Java Bytecode
+bin/
+build/
+
+# Runtime Data and Generated Files
+data/
+
+# IDE and Editor Metadata
+.vscode/
+*.log
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
