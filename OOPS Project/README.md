@@ -1,108 +1,109 @@
-# Smart Building Management System - OOPS Project
+# Smart Building Management System
 
-## Submission Overview
+A console‑based Java application for managing building infrastructure, equipment, occupancy, lighting, security, alerts, reports, users, and persistent system state. The project is a comprehensive OOP demonstration and includes an automated integration‑test suite, regression tests, and extensive documentation.
 
-This folder contains the complete submission for the Smart Building Management System project, fulfilling all specified OOPS requirements.
+## Highlights
 
-## Folder Structure
+- **Robust validation** – floor numbers must be > 0, duplicate floor numbers are rejected, occupancy cannot exceed room capacity, light brightness limited to 0‑100, and all numeric inputs are error‑checked.
+- **Full OOP hierarchy** – 25+ production classes, abstract `BuildingComponent`, nested types, multiple inheritance levels for users, and var‑args usage.
+- **Role‑based access control** – `Administrator`, `MaintenanceStaff`, `SecurityStaff`, `GeneralUser` with fine‑grained permission checks.
+- **Persistence** – object‑graph serialization to `data/building_data.ser`; load restores exact state.
+- **Reporting engine** – energy, occupancy, equipment, security, lighting, and combined reports (var‑args).
+- **Alert system** – listener pattern, severity filtering, active/resolved tracking.
+- **Comprehensive test coverage** – 9 unit/integration tests + a full regression script covering every menu option and edge case (all passed).
+- **Zero external dependencies** – pure Java 11+ and Bash scripts.
 
-```
-E:\OOPS\OOPS Project\
-├── src/
-│   └── com/
-│       └── smartbuilding/
-│           ├── SmartBuildingApp.java       (Main class)
-│           ├── model/                      (Entity classes)
-│           ├── service/                    (Service classes)
-│           ├── exception/                  (Custom exceptions)
-│           └── util/                       (File handler)
-├── bin/                                   (Compiled .class files - generated)
-├── PROJECT_DOCUMENTATION.md               (Detailed documentation)
-├── RUBRICS.md                             (Requirements mapping table)
-├── FULL_PROJECT_REPORT.md                (Combined doc with code - optional)
-└── README.md                              (This file)
-```
+## Current Verification Status
 
-## Deliverables Checklist
+- **Build** – passes `javac -Xlint:all` with no warnings.
+- **Unit / Integration tests** – **9 passed, 0 failed**.
+- **Regression suite** – runs through every menu path, role‑based permission checks, duplicate‑floor detection, invalid‑ID handling, occupancy limits, brightness limits, and persistence. **All steps succeeded**.
+- **Console smoke test** – passed.
+- **Last verified** – **2026‑06‑17**.
 
-✅ **1. Word Document** - PROJECT_DOCUMENTATION.md
-   - Comprehensive project explanation
-   - UML diagram description (class relationships)
-   - Feature details
-   - OOPS principles mapping
+## Requirements
 
-✅ **2. Code Appended to Word Doc** - FULL_PROJECT_REPORT.md (or separate .java files)
-   - Complete source code of all 24 Java files included
+- JDK 11 or newer
+- Bash for the provided scripts
 
-✅ **3. .Java Files** - All source files in `src/` directory
-   - 24 Java files organized in packages
+No third‑party libraries are required.
 
-✅ **4. PPT** - Optional (not provided; can be created from documentation)
-
-✅ **5. Rubrics Table** - RUBRICS.md
-   - Detailed table showing usage of all 12 required components
-   - Count and specific examples for each
-
-## OOPS Requirements Met
-
-| Requirement | Status | Count/Details |
-|-------------|--------|---------------|
-| Classes (≥4) | ✅ | 18+ |
-| Nested Classes (≥1) | ✅ | 7 |
-| Abstract Class (≥1) | ✅ | 1 (BuildingComponent) |
-| Interface (≥1) | ✅ | 1 (AlertListener) |
-| Hierarchical Inheritance (≥1) | ✅ | User → 4 subclasses |
-| Package | ✅ | com.smartbuilding + subpackages |
-| Exception Handling (≥3 cases) | ✅ | 4+ custom exceptions |
-| I/O (File, Scanner) | ✅ | FileHandler with multiple streams |
-| Overloaded Methods (≥3) | ✅ | 15+ |
-| Overloaded Constructors (≥2) | ✅ | 15+ |
-| Vararg Overloading (≥1) | ✅ | 5 methods |
-| Wrapper Classes | ✅ | Used throughout |
-
-## How to Compile
+## Quick Start
 
 ```bash
-# Navigate to project directory
-cd "E:\OOPS\OOPS Project"
-
-# Compile all source files
-javac -d bin src/com/smartbuilding/*.java src/com/smartbuilding/model/*.java src/com/smartbuilding/service/*.java src/com/smartbuilding/exception/*.java src/com/smartbuilding/util/*.java
+# Build (warning‑clean) and run the interactive console
+./run.sh
 ```
 
-## How to Run
+The script performs a clean build and launches the menu‑driven UI.
+
+### Manual equivalent
 
 ```bash
-java -cp bin com.smartbuilding.SmartBuildingApp
+./build.sh
+java -cp build/classes com.smartbuilding.SmartBuildingApp
 ```
 
-## Demo Credentials
+## Run Tests
 
-| Role | Username | Password |
-|------|----------|----------|
-| Administrator | admin | admin123 |
-| Maintenance Staff | staff | staff123 |
-| Security Staff | security | sec123 |
-| General User | user | user123 |
+```bash
+./test.sh        # unit / integration tests
+cat regression_test.txt | ./run.sh   # full regression suite (automated)
+```
 
-## System Features
+Both commands should complete with **no failures**.
 
-1. **Building Management** - Add rooms/floors, manage equipment
-2. **Lighting Control** - Automated outdoor lighting with schedules
-3. **Security** - Access logs, incidents, alarms
-4. **Occupancy** - Real-time tracking, peak analysis, utilities optimization
-5. **Alerts** - Equipment failures, security breaches, maintenance reminders
-6. **Reports** - Energy, occupancy, equipment, security, lighting
+## Demo Accounts
 
-## Notes
+| Role          | Username | Password   | Permissions |
+|---------------|----------|------------|--------------|
+| Administrator | `admin`  | `admin123` | Full management |
+| Maintenance   | `staff`  | `staff123` | Equipment, occupancy, lighting, alerts |
+| Security      | `security`| `sec123`  | Occupancy, security ops, alerts |
+| General user  | `user`   | `user123`  | View reports and status |
 
-- All code compiles error-free and runs successfully.
-- Code is original, well-indented, and extensively commented.
-- Exception handling implemented for all critical operations.
-- Follows Java coding conventions and OOPS best practices.
+These credentials are for demonstration only.
+
+## Project Structure
+
+```
+.
+├── src/com/smartbuilding/
+│   ├── SmartBuildingApp.java
+│   ├── model/
+│   ├── service/
+│   ├── exception/
+│   └── util/
+├── test/com/smartbuilding/SmartBuildingSystemTest.java
+├── build.sh
+├── run.sh
+├── test.sh
+├── regression_test.txt   # automated end‑to‑end script
+├── PROJECT_DOCUMENTATION.md
+├── FULL_PROJECT_REPORT.md
+└── RUBRICS.md
+```
+
+Generated directories:
+
+- `build/` – compiled classes
+- `data/` – runtime saves, exported reports, logs, credential files
+- `bin/` – legacy compiled classes (use `build/` for current output)
+
+## Important Runtime Behavior
+
+- **Save Data** stores the full `Building` and `AlertSystem` graphs in `data/building_data.ser`.
+- **Load Data** restores that state and forces a re‑login.
+- IDs are generated by a thread‑safe `AtomicLong` to guarantee uniqueness.
+- Invalid menu entries are reported without terminating the loop.
+- Collection getters return defensive copies to protect encapsulated state.
+
+## Documentation
+
+- [`PROJECT_DOCUMENTATION.md`](PROJECT_DOCUMENTATION.md): architecture, design, and extension points.
+- [`FULL_PROJECT_REPORT.md`](FULL_PROJECT_REPORT.md): objectives, audit, verification matrix, and build instructions.
+- [`RUBRICS.md`](RUBRICS.md): mapping of OOP rubric requirements to concrete code artifacts.
 
 ---
 
-**Project Completed:** April 2026
-**Technology:** Java (JDK 17+ recommended)
-**Total Source Files:** 24
+*Feel free to explore, modify, or extend the system. The code is intentionally simple to serve as a teaching and interview showcase.*

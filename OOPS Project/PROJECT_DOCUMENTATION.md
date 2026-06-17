@@ -1,276 +1,201 @@
-# Smart Building Management System - Project Documentation
+# Smart Building Management System: Technical Documentation
 
-## 1. Project Overview
+## 1. Purpose
 
-The **Smart Building Management System (SBMS)** is a comprehensive Java application designed to manage infrastructure, security, lighting, occupancy monitoring, and alert systems for residential buildings. The system includes disaster alert capabilities and provides role-based access control for administrators, maintenance staff, security personnel, and general users.
+The Smart Building Management System (SBMS) is an educational Java application that models and coordinates the major operational areas of a building: infrastructure, equipment, energy, occupancy, lighting, security, alerts, users, persistence, and reporting.
 
-### Key Features:
-- Building infrastructure management (floors, rooms, equipment)
-- Outdoor lighting control with scheduling
-- Security system with access logs, surveillance, alarms, and incident reports
-- Real-time occupancy monitoring and analytics
-- Multi-level alert and notification system
-- Comprehensive reporting and analytics
-- File-based data persistence
-- Interactive console-based user interface
+The implementation uses only the Java standard library and runs on JDK 11+.
 
-## 2. System Architecture
+## 2. Architecture
 
-### 2.1 Package Structure
-```
+The project follows a layered package structure:
+
+```text
 com.smartbuilding
-├── SmartBuildingApp.java          (Main application)
-├── model/                         (Entity classes)
-│   ├── BuildingComponent.java    (Abstract base)
-│   ├── User.java                 (Base user class)
-│   ├── Administrator.java        (Hierarchical inheritance)
-│   ├── MaintenanceStaff.java     (Hierarchical inheritance)
-│   ├── SecurityStaff.java        (Hierarchical inheritance)
-│   ├── GeneralUser.java          (Hierarchical inheritance)
-│   ├── Building.java             (Aggregates all components)
-│   ├── Floor.java
-│   ├── Room.java
-│   ├── Equipment.java            (Includes nested static class)
-│   ├── LightingSystem.java      (Includes nested non-static class)
-│   ├── SecuritySystem.java      (Includes nested static classes)
-│   ├── OccupancyMonitor.java    ( Includes nested class)
-│   └── Alert.java                (Includes nested enum)
-├── service/
-│   ├── AlertSystem.java          (Manages alerts, listeners)
-│   ├── ReportGenerator.java      (Generates various reports)
-│   └── BuildingManager.java      (Main service coordinator)
-├── exception/
-│   ├── InvalidAccessException.java
-│   ├── EquipmentNotFoundException.java
-│   ├── InvalidInputException.java
-│   └── FileOperationException.java
-└── util/
-    └── FileHandler.java          (I/O operations)
+├── SmartBuildingApp              Application entry point
+├── model                         Domain objects and OOP hierarchies
+├── service                       Use cases and coordination
+├── exception                     Domain-specific checked exceptions
+└── util                          IDs and file operations
 ```
 
-### 2.2 UML Class Diagram (Description)
+### Domain Layer
 
-The system follows a layered architecture with clear separation of concerns:
+`Building` aggregates `Floor`; each `Floor` aggregates `Room`; each `Room` aggregates `Equipment`. `Building` also owns `LightingSystem`, `SecuritySystem`, and `OccupancyMonitor`.
 
-**Inheritance Hierarchy:**
-```
-BuildingComponent (abstract)
+`BuildingComponent` is the abstract base for maintainable building elements:
+
+```text
+BuildingComponent
+├── Building
 ├── Floor
 ├── Room
 ├── Equipment
 ├── LightingSystem
 ├── SecuritySystem
-├── OccupancyMonitor
-└── Building (also aggregates these)
-
-User (base)
-├── Administrator (implements AlertListener)
-├── MaintenanceStaff (implements AlertListener)
-├── SecurityStaff (implements AlertListener)
-└── GeneralUser (implements AlertListener)
+└── OccupancyMonitor
 ```
 
-**Key Relationships:**
-- **Aggregation:** Building contains multiple Floors, which contain multiple Rooms, which contain multiple Equipment.
-- **Composition:** LightingSystem contains multiple Light objects (nested class).
-- **Association:** AlertSystem maintains a list of AlertListener objects (Users).
-- **Implementation:** Administrator, MaintenanceStaff, SecurityStaff, GeneralUser all implement AlertListener interface.
+`User` is the base of a hierarchical inheritance model:
 
-**Nested Classes:**
-1. `Equipment.EquipmentSpecs` (static nested)
-2. `LightingSystem.Light` (non-static inner)
-3. `SecuritySystem.AccessLog` (static nested)
-4. `SecuritySystem.Incident` (static nested)
-5. `SecuritySystem.Alarm` (static nested)
-6. `OccupancyMonitor.OccupancyRecord` (non-static inner)
-7. `Alert.AlertTypeEnum` (nested enum)
+```text
+User
+├── Administrator
+├── MaintenanceStaff
+├── SecurityStaff
+└── GeneralUser
+```
 
-**Interfaces:**
-- `AlertListener`: Defines contract for receiving alerts.
+All four concrete user types implement `AlertListener`, demonstrating interface-based polymorphism.
 
-**Abstract Class:**
-- `BuildingComponent`: Provides common properties and abstract `performMaintenance()` method.
+### Service Layer
 
-## 3. OOPS Principles & Requirements Mapping
+- `BuildingManager`: application facade, authorization, console workflow, save/load coordination
+- `AlertSystem`: alert creation, one-time listener delivery, filtering, and resolution
+- `ReportGenerator`: energy, occupancy, equipment, security, lighting, and combined reports
 
-### 3.1 Requirements Satisfied
+### Utility Layer
 
-| # | Requirement | Implementation Details | Count |
-|---|-------------|------------------------|-------|
-| 1 | **At least 4 classes** | Building, Room, Floor, Equipment, LightingSystem, SecuritySystem, OccupancyMonitor, User, Administrator, MaintenanceStaff, SecurityStaff, GeneralUser, etc. | 13+ |
-| 2 | **Nested classes** | Equipment.EquipmentSpecs, LightingSystem.Light, SecuritySystem.AccessLog/Incident/Alarm, OccupancyMonitor.OccupancyRecord, Alert.AlertTypeEnum | 7 |
-| 3 | **Abstract class** | BuildingComponent (abstract) with abstract performMaintenance() method | 1 |
-| 4 | **Interface** | AlertListener with receiveAlert(), canHandleAlert(), acknowledgeAlert() | 1 |
-| 5 | **Hierarchical inheritance** | User → Administrator/MaintenanceStaff/SecurityStaff/GeneralUser | 1 hierarchy (4 subclasses) |
-| 6 | **Package** | com.smartbuilding (with subpackages model, service, exception, util) | 1 package structure |
-| 7 | **Exception handling** | InvalidAccessException, EquipmentNotFoundException, InvalidInputException, FileOperationException | 4+ cases |
-| 8 | **I/O** | FileHandler with file read/write, serialization, Scanner for input | Multiple |
-| 9 | **Overloaded methods** | addEquipment(), generateReport(), sendAlert(), logAccess(), etc. | 10+ |
-|10 | **Overloaded constructors** | Room(3), Equipment(4), User(3), GeneralUser(3), Administrator(2), etc. | 15+ |
-|11 | **Vararg overloading** | addMultipleEquipments(String...), createAlerts(Alert...), generateCombinedReport(String...), addMultipleLights(String...) | 4 |
-|12 | **Wrappers** | Integer (auto-boxing), Double, Boolean, ArrayList, HashMap used extensively | Throughout |
+- `IdGenerator`: thread-safe process-wide readable IDs using `AtomicLong`
+- `FileHandler`: serialization, report export, configuration import, event logs, and hashed credentials
 
-### 3.2 Additional OOPS Features
+## 3. OOP Design
 
-- **Polymorphism:** Method overriding (performMaintenance, toString), interface implementation.
-- **Encapsulation:** Private fields with getters/setters, data hiding.
-- **Abstraction:** Abstract classes and interfaces hide implementation details.
-- **Composition:** Building aggregates multiple components.
-- **Dynamic Binding:** Runtime method dispatch.
+### Encapsulation
 
-## 4. Feature Implementation Details
+Fields are private or protected and accessed through behavior-focused methods. Mutable lists and maps are returned as defensive copies.
 
-### 4.1 Building Infrastructure Management
-- `Building` class maintains list of `Floors`.
-- `Floor` contains list of `Rooms`.
-- `Room` contains list of `Equipment`.
-- Each component extends `BuildingComponent` with common properties.
-- CRUD operations: addFloor, addRoom, addEquipment, remove methods.
-- Maintenance tracking with history.
+### Abstraction
 
-### 4.2 Lighting Management (Outdoor)
-- `LightingSystem` manages multiple `Light` objects (nested class).
-- Features: on/off control, brightness adjustment (0-100%).
-- Automated time-based scheduling (on/off times).
-- Energy consumption monitoring per light and total.
+`BuildingComponent` defines the common state and abstract `performMaintenance()` contract. Each subclass supplies its own maintenance behavior.
 
-### 4.3 Security System Management
-- `SecuritySystem` contains nested classes: AccessLog, Incident, Alarm.
-- Features:
-  - Entry/exit access logging with authorization status.
-  - Incident reporting with severity levels.
-  - Alarm triggering and management.
-  - Surveillance monitoring simulation.
-- Unauthorized access detection.
-- Security reports generation.
+### Inheritance and Polymorphism
 
-### 4.4 Occupancy Monitoring
-- `OccupancyMonitor` tracks occupancy via `OccupancyRecord` (nested class).
-- Features:
-  - Real-time occupancy recording per room/zone.
-  - Peak occupancy period analysis.
-  - Capacity validation and overcrowding alerts.
-  - Occupancy utilization percentage calculation.
-  - Optimization recommendations for utilities.
+Building components override `performMaintenance()`. User subclasses implement `AlertListener` differently, so `AlertSystem` can notify them through a shared interface.
 
-### 4.5 Alerts and Notifications
-- `AlertSystem` manages all system alerts.
-- `AlertListener` interface implemented by all User types.
-- Alert types:
-  - Equipment failure
-  - Energy overuse
-  - Security breach
-  - Maintenance reminders
-- Severity levels: INFO, WARNING, HIGH, CRITICAL.
-- Listeners receive alerts based on their capability (canHandleAlert).
-- Alert acknowledgment tracking.
+### Composition and Aggregation
 
-### 4.6 Reporting and Analytics
-- `ReportGenerator` produces:
-  - Energy consumption reports (equipment + lighting)
-  - Occupancy utilization reports
-  - Equipment performance and status reports
-  - Security incident and alarm reports
-  - Combined multi-report generation (varargs)
-- Reports can be viewed on-screen or exported to files.
+The building object graph expresses real ownership relationships. Nested classes keep subordinate concepts close to their owners:
 
-### 4.7 Role-Based Access Control
-Four user roles with different permissions:
-1. **Administrator:** Full system control, user management.
-2. **Maintenance Staff:** Equipment updates, maintenance tasks, receives equipment alerts.
-3. **Security Staff:** Access log monitoring, incident investigation, security alarms.
-4. **General User:** View-only access to reports and information.
+- `Equipment.EquipmentSpecs`
+- `LightingSystem.Light`
+- `SecuritySystem.AccessLog`
+- `SecuritySystem.Incident`
+- `SecuritySystem.Alarm`
+- `OccupancyMonitor.OccupancyRecord`
+- `Alert.AlertTypeEnum`
 
-Each role extends `User` class and implements `AlertListener` appropriately.
+## 4. Functional Modules
 
-### 4.8 Data Persistence (I/O)
-`FileHandler` provides:
-- Serialization for building data.
-- Export reports to text files.
-- Import configuration files.
-- User credentials storage and validation.
-- System event logging.
-- Uses `Scanner` for reading user input from console.
+### Infrastructure and Equipment
 
-## 5. How to Compile and Run
+- Add floors, rooms, and equipment
+- Find rooms and equipment by stable IDs
+- Prevent duplicate floor numbers and component IDs
+- Track equipment type, status, energy, specifications, and maintenance dates
+- Validate status and non-negative energy values
 
-### Compilation:
+### Occupancy
+
+- Enforce room capacity
+- Increment, decrement, and directly update occupancy
+- Record time-stamped occupancy samples
+- Calculate room and building utilization
+- Detect near-capacity records and analyze peak periods
+
+### Lighting
+
+- Add uniquely identified lights
+- Turn individual/all lights on or off
+- Validate brightness from 0 to 100
+- Support daytime and overnight schedules
+- Track cumulative energy use
+
+### Security
+
+- Store authorized and unauthorized access logs
+- Create incidents and move them through `OPEN`, `INVESTIGATING`, and `RESOLVED`
+- Trigger and deactivate alarms
+- Produce security summaries
+
+### Alerts
+
+- Create single or multiple alerts
+- Validate `INFO`, `WARNING`, `HIGH`, and `CRITICAL` severity
+- Deliver each alert once to matching listeners
+- Filter by severity and move resolved alerts to history
+
+### Reports
+
+Reports are generated from live domain state:
+
+- Energy consumption
+- Current occupancy and capacity
+- Correct per-type equipment totals and statuses
+- Security events and active alarms
+- Lighting details and consumption
+- Combined reports via varargs
+
+## 5. Role-Based Access
+
+| Operation | Admin | Maintenance | Security | General |
+|---|---:|---:|---:|---:|
+| View reports/status | Yes | Yes | Yes | Yes |
+| Add room | Yes | No | No | No |
+| Add equipment | Yes | Yes | No | No |
+| Update occupancy | Yes | Yes | Yes | No |
+| Control lighting | Yes | Yes | No | No |
+| Trigger alerts | Yes | Yes | Yes | No |
+| Security operations | Yes | No | Yes | No |
+
+Unauthorized operations throw `InvalidAccessException`.
+
+## 6. Persistence and I/O
+
+`FileHandler.saveBuildingData()` serializes a `SavedState` containing the full building and alert object graphs. All participating domain types are serializable and define stable `serialVersionUID` values.
+
+`BuildingManager.loadData()` replaces the current state, rebuilds report dependencies, and clears the current login.
+Alert listeners are transient, so user sessions and in-memory passwords are not written into the state file.
+
+Other I/O functions:
+
+- Text report export
+- Configuration-file import
+- Timestamped event logging
+- User credential storage using random salts and PBKDF2-HMAC-SHA256 hashes
+
+## 7. Validation and Exceptions
+
+- `InvalidAccessException`: role or login failure
+- `EquipmentNotFoundException`: unknown room/equipment target
+- `InvalidInputException`: invalid occupancy, brightness, menu number, or status
+- `FileOperationException`: save, load, import, export, or credential I/O failure
+
+The interactive loop reads complete lines and parses them, allowing malformed input to be handled without leaving `Scanner` in a broken state.
+
+## 8. Build and Verification
 
 ```bash
-# Navigate to project root
-cd "E:\OOPS\OOPS Project"
-
-# Create output directory
-mkdir bin
-
-# Compile all source files
-javac -d bin src/com/smartbuilding/*.java src/com/smartbuilding/model/*.java src/com/smartbuilding/service/*.java src/com/smartbuilding/exception/*.java src/com/smartbuilding/util/*.java
+./build.sh
+./test.sh   # Verified: 9 passed, 0 failed + console smoke test
+./run.sh
 ```
 
-### Running the Application:
+The test harness covers:
 
-```bash
-# Run the main class
-java -cp bin com.smartbuilding.SmartBuildingApp
-```
+1. Demo topology, counts, and ID uniqueness
+2. Equipment totals, statuses, and energy reports
+3. Occupancy boundaries
+4. Lighting behavior and invalid values
+5. Security incident lifecycle
+6. Alert delivery and resolution
+7. Role-based access
+8. Full save/restore
+9. Configuration, credentials, and report files
+10. Invalid console input smoke path
 
-### Sample Demo Credentials:
-- **Administrator:** username: `admin`, password: `admin123`
-- **Maintenance Staff:** username: `staff`, password: `staff123`
-- **Security Staff:** username: `security`, password: `sec123`
-- **General User:** username: `user`, password: `user123`
+Verified on OpenJDK 11.0.31 with a warning-clean `javac -Xlint:all` build.
 
-## 6. Sample Workflow
+## 9. Extension Points
 
-1. System starts and initializes demo data (2 floors, rooms, equipment, lights).
-2. User logs in with appropriate role.
-3. Depending on role, user can:
-   - Add/remove rooms (admin only)
-   - Add equipment to rooms
-   - Update room occupancy
-   - Trigger alerts manually
-   - View various reports (energy, occupancy, equipment, security, lighting)
-   - Control outdoor lighting
-   - Perform security operations (log access, report incidents, trigger alarms)
-   - Save/load data to/from files
-4. Alerts are automatically notified to subscribed listeners.
-5. All actions are logged.
-
-## 7. Exception Handling Scenarios (3+ cases)
-
-1. **InvalidAccessException** - when a user performs unauthorized action:
-   ```java
-   if (!(currentUser instanceof Administrator)) {
-       throw new InvalidAccessException(currentUser.getUsername(), "Add Room");
-   }
-   ```
-
-2. **EquipmentNotFoundException** - when equipment/room ID not found:
-   ```java
-   Room room = findRoomById(roomId);
-   if (room == null) {
-       throw new EquipmentNotFoundException(roomId);
-   }
-   ```
-
-3. **InvalidInputException** - when invalid data provided (e.g., occupancy > capacity):
-   ```java
-   if (count < 0 || count > capacity) {
-       throw new Exception("Invalid occupancy count...");
-   }
-   ```
-
-4. **FileOperationException** - when file I/O fails:
-   ```java
-   try (ObjectOutputStream oos = ...) { ... } catch (IOException e) {
-       throw new FileOperationException(filename, "SAVE");
-   }
-   ```
-
-## 8. Conclusion
-
-This project successfully demonstrates all required OOPS concepts and functional requirements. The system is modular, extensible, and follows best practices. All code is well-indented, commented, and compiles/runs error-free.
-
----
-
-**Note:** The code files are provided separately in the `src/` directory. This document includes a high-level overview and design explanation. For detailed implementation, refer to the individual Java files.
+The service boundaries allow later replacement of console I/O, serialized storage, and hardcoded demo authentication with a GUI/web layer, database repositories, or an identity provider without redesigning the core domain hierarchy.
