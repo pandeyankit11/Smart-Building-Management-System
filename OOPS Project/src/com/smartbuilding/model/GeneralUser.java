@@ -1,10 +1,13 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
 /**
  * General User class extends User.
  * General users can only view information, not modify anything.
  */
 public class GeneralUser extends User implements AlertListener {
+    private static final long serialVersionUID = 1L;
+
     private String apartmentNumber;
 
     // Overloaded constructors
@@ -14,12 +17,12 @@ public class GeneralUser extends User implements AlertListener {
     }
 
     public GeneralUser(String username, String password, String apartmentNumber) {
-        super("USR" + System.currentTimeMillis() % 10000, username, password, "GENERAL_USER");
+        super(IdGenerator.next("USR"), username, password, "GENERAL_USER");
         this.apartmentNumber = apartmentNumber;
     }
 
     public GeneralUser(String username, String apartmentNumber) {
-        this("USR" + System.currentTimeMillis() % 10000, username, "default123", apartmentNumber);
+        this(IdGenerator.next("USR"), username, "default123", apartmentNumber);
     }
 
     @Override

@@ -2,12 +2,15 @@ package com.smartbuilding.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.smartbuilding.util.IdGenerator;
 
 /**
  * Building class aggregates all components of the building.
  * Main aggregation point for floors, systems, and monitors.
  */
 public class Building extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private String buildingName;
     private String address;
     private List<Floor> floors;
@@ -24,7 +27,7 @@ public class Building extends BuildingComponent {
     }
 
     public Building(String buildingName, String address) {
-        this("BLD" + System.currentTimeMillis() % 10000, "Main Building", "Primary Location",
+        this(IdGenerator.next("BLD"), "Main Building", "Primary Location",
              buildingName, address);
         // Initialize systems
         this.lightingSystem = new LightingSystem("Building Lighting");
@@ -33,13 +36,22 @@ public class Building extends BuildingComponent {
     }
 
     public void addFloor(Floor floor) {
+        if (floor == null) {
+            throw new IllegalArgumentException("Floor cannot be null");
+        }
+        if (getFloorByNumber(floor.getFloorNumber()) != null) {
+            throw new IllegalArgumentException("Floor number already exists: " + floor.getFloorNumber());
+        }
         floors.add(floor);
         System.out.println("Floor " + floor.getFloorNumber() + " added to building");
     }
 
-    public void removeFloor(int floorNumber) {
-        floors.removeIf(floor -> floor.getFloorNumber() == floorNumber);
-        System.out.println("Floor " + floorNumber + " removed from building");
+    public boolean removeFloor(int floorNumber) {
+        boolean removed = floors.removeIf(floor -> floor.getFloorNumber() == floorNumber);
+        if (removed) {
+            System.out.println("Floor " + floorNumber + " removed from building");
+        }
+        return removed;
     }
 
     public Floor getFloorByNumber(int floorNumber) {
@@ -55,7 +67,9 @@ public class Building extends BuildingComponent {
     public int getTotalEquipmentCount() {
         int total = 0;
         for (Floor floor : floors) {
-            total += floor.getRoomCount();
+            for (Room room : floor.getRooms()) {
+                total += room.getEquipmentCount();
+            }
         }
         return total;
     }
@@ -66,7 +80,7 @@ public class Building extends BuildingComponent {
         for (Floor floor : floors) {
             for (Room room : floor.getRooms()) {
                 for (Equipment eq : room.getEquipmentList()) {
-                    if (eq.getEquipmentType().equals(equipmentType)) {
+                    if (eq.getEquipmentType().equalsIgnoreCase(equipmentType)) {
                         total++;
                     }
                 }
@@ -129,8 +143,12 @@ public class Building extends BuildingComponent {
     public SecuritySystem getSecuritySystem() { return securitySystem; }
     public OccupancyMonitor getOccupancyMonitor() { return occupancyMonitor; }
 
-    public void setBuildingName(String buildingName) { this.buildingName = buildingName; }
-    public void setAddress(String address) { this.address = address; }
+    public void setBuildingName(String buildingName) {
+        this.buildingName = requireText(buildingName, "Building name");
+    }
+    public void setAddress(String address) {
+        this.address = requireText(address, "Address");
+    }
     public void setLightingSystem(LightingSystem lightingSystem) { this.lightingSystem = lightingSystem; }
     public void setSecuritySystem(SecuritySystem securitySystem) { this.securitySystem = securitySystem; }
     public void setOccupancyMonitor(OccupancyMonitor occupancyMonitor) { this.occupancyMonitor = occupancyMonitor; }

@@ -1,12 +1,16 @@
 package com.smartbuilding.model;
 
 import java.time.LocalDateTime;
+import com.smartbuilding.util.IdGenerator;
+import java.io.Serializable;
 
 /**
  * Alert class represents system alerts and notifications.
  * Part of the alert management system.
  */
-public class Alert {
+public class Alert implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String alertId;
     private String alertType;
     private String message;
@@ -32,7 +36,7 @@ public class Alert {
         this.alertId = alertId;
         this.alertType = alertType;
         this.message = message;
-        this.severity = severity;
+        this.severity = normalizeSeverity(severity);
         this.source = source;
         this.timestamp = LocalDateTime.now();
         this.acknowledged = false;
@@ -40,7 +44,7 @@ public class Alert {
     }
 
     public Alert(String alertType, String message, String severity, String source) {
-        this("ALT" + System.currentTimeMillis() % 10000, alertType, message, severity, source);
+        this(IdGenerator.next("ALT"), alertType, message, normalizeSeverity(severity), source);
     }
 
     public void acknowledge(String assignedTo) {
@@ -50,8 +54,13 @@ public class Alert {
     }
 
     public void updateSeverity(String newSeverity) {
-        this.severity = newSeverity;
-        System.out.println("Alert " + alertId + " severity updated to: " + newSeverity);
+        this.severity = normalizeSeverity(newSeverity);
+        System.out.println("Alert " + alertId + " severity updated to: " + severity);
+    }
+
+    public void update(String message, String severity) {
+        this.message = requireText(message, "Alert message");
+        updateSeverity(severity);
     }
 
     // Overloaded method for quick acknowledgment
@@ -80,4 +89,20 @@ public class Alert {
 
     public void setAcknowledged(boolean acknowledged) { this.acknowledged = acknowledged; }
     public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+
+    private static String normalizeSeverity(String severity) {
+        String normalized = severity == null ? "" : severity.trim().toUpperCase();
+        if (!normalized.equals("INFO") && !normalized.equals("WARNING")
+                && !normalized.equals("HIGH") && !normalized.equals("CRITICAL")) {
+            throw new IllegalArgumentException("Invalid alert severity: " + severity);
+        }
+        return normalized;
+    }
+
+    private static String requireText(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+        return value.trim();
+    }
 }

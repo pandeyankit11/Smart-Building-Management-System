@@ -3,12 +3,17 @@ package com.smartbuilding.util;
 import com.smartbuilding.exception.FileOperationException;
 import com.smartbuilding.model.*;
 import com.smartbuilding.service.AlertSystem;
-import com.smartbuilding.service.ReportGenerator;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 import java.util.Scanner;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 /**
  * FileHandler class handles all file I/O operations.
@@ -18,41 +23,40 @@ public class FileHandler {
     private String dataDirectory;
 
     public FileHandler(String dataDirectory) {
+        if (dataDirectory == null || dataDirectory.trim().isEmpty()) {
+            throw new IllegalArgumentException("Data directory is required");
+        }
         this.dataDirectory = dataDirectory;
-        File dir = new File(dataDirectory);
-        if (!dir.exists()) {
-            dir.mkdirs();
+        try {
+            Files.createDirectories(Path.of(dataDirectory));
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Cannot create data directory: " + dataDirectory, e);
         }
     }
 
     public void saveBuildingData(Building building, AlertSystem alertSystem) throws FileOperationException {
         String filename = dataDirectory + "/building_data.ser";
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename))) {
-            // Note: In a real implementation, all model classes would implement Serializable
-            // For demonstration, we're saving simple string representations
-            List<String> data = new ArrayList<>();
-            data.add(building.toString());
-            data.add("Floors: " + building.getFloors().size());
-            data.add("Alerts: " + alertSystem.getActiveAlertCount());
-            oos.writeObject(data);
+            oos.writeObject(new SavedState(building, alertSystem));
             System.out.println("Building data saved to: " + filename);
         } catch (IOException e) {
-            throw new FileOperationException(filename, "SAVE");
+            throw new FileOperationException("Failed to save building data: " + filename, e);
         }
     }
 
-    public void loadBuildingData() throws FileOperationException {
+    public SavedState loadBuildingData() throws FileOperationException {
         String filename = dataDirectory + "/building_data.ser";
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename))) {
-            List<String> data = (List<String>) ois.readObject();
-            System.out.println("Building data loaded from: " + filename);
-            for (String line : data) {
-                System.out.println("  " + line);
+            Object loaded = ois.readObject();
+            if (!(loaded instanceof SavedState)) {
+                throw new FileOperationException("Saved data has an unsupported format: " + filename);
             }
+            System.out.println("Building data loaded from: " + filename);
+            return (SavedState) loaded;
         } catch (FileNotFoundException e) {
-            System.out.println("No saved data found. Starting fresh.");
+            throw new FileOperationException("No saved data found: " + filename, e);
         } catch (IOException | ClassNotFoundException e) {
-            throw new FileOperationException(filename, "LOAD");
+            throw new FileOperationException("Failed to load building data: " + filename, e);
         }
     }
 
@@ -100,14 +104,17 @@ public class FileHandler {
             userDir.mkdirs();
         }
         try (PrintWriter writer = new PrintWriter(filename)) {
+            byte[] salt = new byte[16];
+            new SecureRandom().nextBytes(salt);
             writer.println("User ID: " + user.getUserId());
             writer.println("Username: " + user.getUsername());
             writer.println("Role: " + user.getRole());
-            writer.println("Password: " + password);
+            writer.println("Password Salt: " + Base64.getEncoder().encodeToString(salt));
+            writer.println("Password Hash: " + hashPassword(password, salt));
             writer.println("Created: " + java.time.LocalDateTime.now());
             System.out.println("User credentials saved: " + user.getUsername());
-        } catch (IOException e) {
-            throw new FileOperationException(filename, "SAVE_USER");
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new FileOperationException("Failed to save user credentials: " + filename, e);
         }
     }
 
@@ -121,16 +128,21 @@ public class FileHandler {
         for (File file : files) {
             try (Scanner scanner = new Scanner(file)) {
                 String fileUsername = null;
-                String filePassword = null;
+                String passwordSalt = null;
+                String passwordHash = null;
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine();
                     if (line.startsWith("Username:")) {
-                        fileUsername = line.split(":")[1].trim();
-                    } else if (line.startsWith("Password:")) {
-                        filePassword = line.split(":")[1].trim();
+                        fileUsername = valueAfterColon(line);
+                    } else if (line.startsWith("Password Salt:")) {
+                        passwordSalt = valueAfterColon(line);
+                    } else if (line.startsWith("Password Hash:")) {
+                        passwordHash = valueAfterColon(line);
                     }
                 }
-                if (username.equals(fileUsername) && password.equals(filePassword)) {
+                if (username.equals(fileUsername) && passwordSalt != null && passwordHash != null
+                        && passwordHash.equals(hashPassword(password,
+                        Base64.getDecoder().decode(passwordSalt)))) {
                     return true;
                 }
             } catch (Exception e) {
@@ -142,4 +154,40 @@ public class FileHandler {
 
     // Getters
     public String getDataDirectory() { return dataDirectory; }
+
+    private static String valueAfterColon(String line) {
+        int separator = line.indexOf(':');
+        return separator >= 0 ? line.substring(separator + 1).trim() : "";
+    }
+
+    private static String hashPassword(String password, byte[] salt)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        PBEKeySpec specification = new PBEKeySpec(password.toCharArray(), salt, 65_536, 256);
+        try {
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            return Base64.getEncoder().encodeToString(factory.generateSecret(specification).getEncoded());
+        } finally {
+            specification.clearPassword();
+        }
+    }
+
+    public static final class SavedState implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final Building building;
+        private final AlertSystem alertSystem;
+
+        private SavedState(Building building, AlertSystem alertSystem) {
+            this.building = building;
+            this.alertSystem = alertSystem;
+        }
+
+        public Building getBuilding() {
+            return building;
+        }
+
+        public AlertSystem getAlertSystem() {
+            return alertSystem;
+        }
+    }
 }

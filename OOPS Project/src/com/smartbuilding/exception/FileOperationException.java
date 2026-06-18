@@ -6,6 +6,7 @@ package com.smartbuilding.exception;
  * Demonstrates I/O exception handling.
  */
 public class FileOperationException extends Exception {
+    private static final long serialVersionUID = 1L;
     private String fileName;
     private String operation;
 

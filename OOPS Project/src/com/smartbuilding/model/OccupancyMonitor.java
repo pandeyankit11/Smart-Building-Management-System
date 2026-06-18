@@ -1,5 +1,7 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
@@ -10,13 +12,17 @@ import java.util.Map;
  * Analyzes peak periods and optimizes utilities.
  */
 public class OccupancyMonitor extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private Map<String, OccupancyRecord> occupancyRecords;
     private Map<String, Integer> roomCapacity;
     private LocalTime peakStartTime;
     private LocalTime peakEndTime;
 
     // Nested class - OccupancyRecord
-    public class OccupancyRecord {
+    public class OccupancyRecord implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String roomId;
         private LocalDate date;
         private LocalTime time;
@@ -55,27 +61,32 @@ public class OccupancyMonitor extends BuildingComponent {
     }
 
     public OccupancyMonitor(String name) {
-        this("OCC" + System.currentTimeMillis() % 10000, name, "Building");
+        this(IdGenerator.next("OCC"), name, "Building");
     }
 
     // Overloaded methods
     public void recordOccupancy(String roomId, int count) {
+        validateOccupancy(roomId, count);
         OccupancyRecord record = new OccupancyRecord(
             roomId, LocalDate.now(), LocalTime.now(), count, "Default"
         );
-        occupancyRecords.put(roomId + "_" + System.currentTimeMillis(), record);
+        occupancyRecords.put(IdGenerator.next("OCR"), record);
         System.out.println("Occupancy recorded: Room " + roomId + " has " + count + " occupants");
     }
 
     public void recordOccupancy(String roomId, int count, String zone) {
+        validateOccupancy(roomId, count);
         OccupancyRecord record = new OccupancyRecord(
             roomId, LocalDate.now(), LocalTime.now(), count, zone
         );
-        occupancyRecords.put(roomId + "_" + System.currentTimeMillis(), record);
+        occupancyRecords.put(IdGenerator.next("OCR"), record);
         System.out.println("Occupancy recorded: Room " + roomId + " (Zone: " + zone + ") has " + count + " occupants");
     }
 
     public void setRoomCapacity(String roomId, int capacity) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Room capacity must be greater than zero");
+        }
         roomCapacity.put(roomId, capacity);
         System.out.println("Capacity set for room " + roomId + ": " + capacity);
     }
@@ -187,8 +198,24 @@ public class OccupancyMonitor extends BuildingComponent {
     public LocalTime getPeakEndTime() { return peakEndTime; }
 
     public void setPeakHours(LocalTime start, LocalTime end) {
+        if (start == null || end == null || start.equals(end)) {
+            throw new IllegalArgumentException("Peak start/end times must be different and non-null");
+        }
         this.peakStartTime = start;
         this.peakEndTime = end;
         System.out.println("Peak hours set: " + start + " - " + end);
+    }
+
+    private void validateOccupancy(String roomId, int count) {
+        if (roomId == null || roomId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Room ID is required");
+        }
+        if (count < 0) {
+            throw new IllegalArgumentException("Occupancy cannot be negative");
+        }
+        int capacity = getRoomCapacity(roomId);
+        if (capacity > 0 && count > capacity) {
+            throw new IllegalArgumentException("Occupancy exceeds room capacity");
+        }
     }
 }

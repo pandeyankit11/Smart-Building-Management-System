@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Building Management System</title>
+    <style>
+        :root {
+            --bg: #f4f7f8;
+            --surface: #ffffff;
+            --line: #d9e2e5;
+            --text: #17272b;
+            --muted: #5d7177;
+            --primary: #0f766e;
+            --primary-dark: #115e59;
+            --danger: #b42318;
+            --warning: #b54708;
+            --success: #027a48;
+            --shadow: 0 12px 32px rgba(23, 39, 43, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, Segoe UI, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            background: #12343b;
+            color: #fff;
+            padding: 18px 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { margin: 0; }
+        h1 { font-size: 24px; letter-spacing: 0; }
+        h2 { font-size: 22px; margin-bottom: 14px; }
+        h3 { font-size: 16px; margin-bottom: 10px; }
+
+        .session-pill {
+            border: 1px solid rgba(255,255,255,0.26);
+            border-radius: 999px;
+            padding: 8px 12px;
+            color: #e7f4f2;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 20px;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        nav {
+            align-self: start;
+            position: sticky;
+            top: 16px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 10px;
+        }
+
+        .menu-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            padding: 11px 12px;
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .menu-button span:first-child { font-weight: 700; }
+        .menu-button:hover { background: #e8f3f1; }
+        .menu-button.active { background: var(--primary); color: #fff; }
+        .menu-number { color: inherit; opacity: 0.72; font-weight: 700; }
+
+        .workspace {
+            min-width: 0;
+            display: grid;
+            gap: 16px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .metric, .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .metric { padding: 14px; }
+        .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; font-weight: 800; }
+        .metric .value { font-size: 24px; font-weight: 800; margin-top: 6px; }
+
+        .panel { padding: 16px; }
+        .split {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .triple {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .form-wide { grid-column: 1 / -1; }
+        label { display: grid; gap: 5px; color: var(--muted); font-size: 13px; font-weight: 700; }
+
+        input, select, textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 9px 10px;
+            color: var(--text);
+            background: #fff;
+            font: inherit;
+        }
+
+        textarea { min-height: 92px; resize: vertical; }
+
+        button, .button {
+            border: 0;
+            border-radius: 6px;
+            padding: 10px 13px;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        button:hover, .button:hover { background: var(--primary-dark); }
+        button.secondary { background: #e6eef0; color: var(--text); }
+        button.secondary:hover { background: #d6e4e7; }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: #912018; }
+        button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .notice {
+            min-height: 42px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #eef8f6;
+            color: var(--primary-dark);
+            padding: 11px 13px;
+            font-weight: 700;
+        }
+
+        .notice.error { background: #fff1f0; color: var(--danger); border-color: #fecdca; }
+        .notice.warn { background: #fff7ed; color: var(--warning); border-color: #fed7aa; }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            min-width: 720px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        th {
+            background: #e8f0f2;
+            color: #25464d;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        tr:last-child td { border-bottom: 0; }
+
+        .badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 4px 8px;
+            background: #e8f3f1;
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .badge.danger { background: #fff1f0; color: var(--danger); }
+        .badge.warn { background: #fff7ed; color: var(--warning); }
+        .badge.ok { background: #ecfdf3; color: var(--success); }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+            background: #0f1f24;
+            color: #e6fffb;
+            border-radius: 8px;
+            padding: 14px;
+            min-height: 220px;
+            overflow: auto;
+        }
+
+        .muted { color: var(--muted); }
+        .empty { color: var(--muted); padding: 16px; }
+
+        @media (max-width: 980px) {
+            main { grid-template-columns: 1fr; }
+            nav { position: static; }
+            .summary-grid, .split, .triple { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            header { padding: 16px; }
+            main { padding: 12px; }
+            .topbar { align-items: flex-start; flex-direction: column; }
+            form { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="topbar">
+        <div>
+            <h1>Smart Building Management System</h1>
+            <div class="muted" style="color:#c9dcdf">Interactive frontend for the original OOP console project</div>
+        </div>
+        <div class="session-pill" id="sessionPill">Checking session...</div>
+    </div>
+</header>
+
+<main>
+    <nav id="menu"></nav>
+    <section class="workspace">
+        <div id="notice" class="notice">Loading dashboard...</div>
+        <div class="summary-grid" id="summaryGrid"></div>
+        <div id="view"></div>
+    </section>
+</main>
+
+<script>
+const menuItems = [
+    ['login', 'Login'],
+    ['logout', 'Logout'],
+    ['building', 'Building & Equipment'],
+    ['occupancy', 'Occupancy'],
+    ['lighting', 'Lighting'],
+    ['security', 'Security'],
+    ['alerts', 'Alerts'],
+    ['reports', 'Reports'],
+    ['status', 'View Complete Status'],
+    ['save', 'Save Data'],
+    ['load', 'Load Data'],
+    ['exit', 'Exit']
+];
+
+const state = {
+    active: 'login',
+    session: { loggedIn: false },
+    building: null,
+    floors: [],
+    rooms: [],
+    equipment: [],
+    lights: [],
+    security: { surveillanceActive: true, accessLogs: [], incidents: [], alarms: [] },
+    alerts: { active: [], resolved: [] },
+    report: '',
+    status: null
+};
+
+const $ = (id) => document.getElementById(id);
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[ch]));
+const number = (value, digits = 1) => Number(value || 0).toFixed(digits);
+
+function setNotice(message, kind = 'info') {
+    const el = $('notice');
+    el.className = 'notice' + (kind === 'error' ? ' error' : kind === 'warn' ? ' warn' : '');
+    el.textContent = message;
+}
+
+async function api(path, options = {}) {
+    const init = { method: options.method || 'GET', headers: {}, body: undefined };
+    if (options.body !== undefined) {
+        init.headers['Content-Type'] = 'application/json';
+        init.body = JSON.stringify(options.body);
+    }
+    const response = await fetch(path, init);
+    const type = response.headers.get('content-type') || '';
+    const data = type.includes('application/json') ? await response.json() : await response.text();
+    if (!response.ok) {
+        throw new Error(data.message || data || `HTTP ${response.status}`);
+    }
+    return data;
+}
+
+async function refreshAll() {
+    const [session, building, floors, rooms, equipment, lights, security, alerts] = await Promise.all([
+        api('/api/session'),
+        api('/api/building'),
+        api('/api/floors'),
+        api('/api/rooms'),
+        api('/api/equipment'),
+        api('/api/lighting'),
+        api('/api/security'),
+        api('/api/alerts')
+    ]);
+    Object.assign(state, { session, building, floors, rooms, equipment, lights, security, alerts });
+    renderShell();
+}
+
+function renderShell() {
+    $('sessionPill').textContent = state.session.loggedIn
+        ? `${state.session.username} (${state.session.role})`
+        : 'Not logged in';
+
+    $('menu').innerHTML = menuItems.map(([id, label], index) => `
+        <button class="menu-button ${state.active === id ? 'active' : ''}" data-menu="${id}">
+            <span>${index + 1}. ${label}</span>
+            <span class="menu-number">${id === 'exit' ? 'close' : 'open'}</span>
+        </button>
+    `).join('');
+
+    const b = state.building || {};
+    $('summaryGrid').innerHTML = `
+        <div class="metric"><div class="label">Building</div><div class="value">${escapeHtml(b.name || 'SBMS')}</div></div>
+        <div class="metric"><div class="label">Floors</div><div class="value">${b.floorCount ?? 0}</div></div>
+        <div class="metric"><div class="label">Occupancy</div><div class="value">${b.totalOccupancy ?? 0}/${b.totalCapacity ?? 0}</div></div>
+        <div class="metric"><div class="label">Energy</div><div class="value">${number(b.totalEnergy)} kWh</div></div>
+    `;
+    renderView();
+}
+
+function renderView() {
+    const renderers = {
+        login: renderLogin,
+        logout: renderLogout,
+        building: renderBuilding,
+        occupancy: renderOccupancy,
+        lighting: renderLighting,
+        security: renderSecurity,
+        alerts: renderAlerts,
+        reports: renderReports,
+        status: renderStatus,
+        save: renderSave,
+        load: renderLoad,
+        exit: renderExit
+    };
+    $('view').innerHTML = renderers[state.active]();
+}
+
+function options(items, valueKey, labelFn) {
+    return items.map(item => `<option value="${escapeHtml(item[valueKey])}">${escapeHtml(labelFn(item))}</option>`).join('');
+}
+
+function table(headers, rows, emptyText) {
+    if (!rows.length) {
+        return `<div class="empty">${escapeHtml(emptyText)}</div>`;
+    }
+    return `<div class="table-wrap"><table><thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+}
+
+function renderLogin() {
+    return `
+        <div class="panel">
+            <h2>1. Login</h2>
+            <form data-action="login">
+                <label>Username<input name="username" required autocomplete="username" value="admin"></label>
+                <label>Password<input name="password" type="password" required autocomplete="current-password" value="admin123"></label>
+                <div class="form-wide actions"><button type="submit">Login</button></div>
+            </form>
+            <p class="muted">Demo accounts: admin/admin123, staff/staff123, security/sec123, user/user123.</p>
+        </div>
+    `;
+}
+
+function renderLogout() {
+    return `
+        <div class="panel">
+            <h2>2. Logout</h2>
+            <p>${state.session.loggedIn ? `Logged in as <strong>${escapeHtml(state.session.username)}</strong>.` : 'No user is currently logged in.'}</p>
+            <button data-click="logout" ${state.session.loggedIn ? '' : 'disabled'}>Logout</button>
+        </div>
+    `;
+}
+
+function renderBuilding() {
+    const floorRows = state.floors.map(f => `
+        <tr><td>${f.floorNumber}</td><td>${escapeHtml(f.floorName)}</td><td>${f.roomCount}</td><td>${f.currentOccupancy}/${f.totalCapacity}</td><td>${number(f.occupancyRate)}%</td></tr>
+    `);
+    const roomRows = state.rooms.map(r => `
+        <tr><td>${escapeHtml(r.componentId)}</td><td>${r.floorNumber}</td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.location)}</td><td>${r.currentOccupancy}/${r.capacity}</td><td>${r.equipmentCount}</td></tr>
+    `);
+    const equipmentRows = state.equipment.map(e => `
+        <tr><td>${escapeHtml(e.equipmentId)}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.roomName)}</td><td>${escapeHtml(e.type)}</td><td>${number(e.energyConsumption)}</td><td>${statusBadge(e.status)}</td></tr>
+    `);
+    return `
+        <div class="panel">
+            <h2>3. Building & Equipment</h2>
+            <div class="split">
+                <form data-action="building-update">
+                    <h3 class="form-wide">Edit Building Details</h3>
+                    <label>Name<input name="name" required value="${escapeHtml(state.building?.name || '')}"></label>
+                    <label>Address<input name="address" required value="${escapeHtml(state.building?.address || '')}"></label>
+                    <div class="form-wide actions"><button type="submit">Update Building</button></div>
+                </form>
+                <form data-action="floor-add">
+                    <h3 class="form-wide">Add Floor</h3>
+                    <label>Floor Name<input name="name" required placeholder="Second Floor"></label>
+                    <label>Floor Number<input name="number" type="number" min="1" required></label>
+                    <div class="form-wide actions"><button type="submit">Add Floor</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="panel split">
+            <form data-action="floor-edit">
+                <h3 class="form-wide">Edit Floor Name</h3>
+                <label>Floor<select name="floorNumber" required>${options(state.floors, 'floorNumber', f => `${f.floorNumber} - ${f.floorName}`)}</select></label>
+                <label>New Name<input name="name" required></label>
+                <div class="form-wide actions"><button type="submit">Save Floor</button></div>
+            </form>
+            <form data-action="floor-delete">
+                <h3 class="form-wide">Delete Floor</h3>
+                <label class="form-wide">Floor<select name="floorNumber" required>${options(state.floors, 'floorNumber', f => `${f.floorNumber} - ${f.floorName}`)}</select></label>
+                <div class="form-wide actions"><button type="submit" class="danger">Delete Floor</button></div>
+            </form>
+        </div>
+        <div class="panel split">
+            <form data-action="room-add">
+                <h3 class="form-wide">Add Room</h3>
+                <label>Floor<select name="floorNumber" required>${options(state.floors, 'floorNumber', f => `${f.floorNumber} - ${f.floorName}`)}</select></label>
+                <label>Room Name<input name="name" required placeholder="Lab"></label>
+                <label>Location<input name="location" required placeholder="Floor 2 East"></label>
+                <label>Capacity<input name="capacity" type="number" min="1" required></label>
+                <div class="form-wide actions"><button type="submit">Add Room</button></div>
+            </form>
+            <form data-action="room-edit">
+                <h3 class="form-wide">Edit Room</h3>
+                <label class="form-wide">Room<select name="roomId" required>${options(state.rooms, 'componentId', r => `${r.name} (${r.componentId})`)}</select></label>
+                <label>Name<input name="name" required></label>
+                <label>Location<input name="location" required></label>
+                <label>Capacity<input name="capacity" type="number" min="1" required></label>
+                <div class="form-wide actions"><button type="submit">Save Room</button></div>
+            </form>
+        </div>
+        <div class="panel split">
+            <form data-action="room-delete">
+                <h3 class="form-wide">Delete Room</h3>
+                <label class="form-wide">Room<select name="roomId" required>${options(state.rooms, 'componentId', r => `${r.name} (${r.componentId})`)}</select></label>
+                <div class="form-wide actions"><button class="danger" type="submit">Delete Room</button></div>
+            </form>
+            <form data-action="equipment-add">
+                <h3 class="form-wide">Add Equipment</h3>
+                <label>Room<select name="roomId" required>${options(state.rooms, 'componentId', r => `${r.name} (${r.componentId})`)}</select></label>
+                <label>Name<input name="name" required placeholder="Generator"></label>
+                <label>Type<input name="type" required placeholder="HVAC"></label>
+                <label>Energy kWh<input name="energyConsumption" type="number" min="0" step="0.1" required></label>
+                <div class="form-wide actions"><button type="submit">Add Equipment</button></div>
+            </form>
+        </div>
+        <div class="panel split">
+            <form data-action="equipment-edit">
+                <h3 class="form-wide">Edit Equipment</h3>
+                <label class="form-wide">Equipment<select name="equipmentId" required>${options(state.equipment, 'equipmentId', e => `${e.name} (${e.equipmentId})`)}</select></label>
+                <label>Name<input name="name" required></label>
+                <label>Location<input name="location" required></label>
+                <label>Type<input name="type" required></label>
+                <label>Energy kWh<input name="energyConsumption" type="number" min="0" step="0.1" required></label>
+                <label>Status<select name="status"><option>OPERATIONAL</option><option>MAINTENANCE</option><option>MALFUNCTIONING</option></select></label>
+                <div class="form-wide actions"><button type="submit">Save Equipment</button></div>
+            </form>
+            <form data-action="equipment-delete">
+                <h3 class="form-wide">Delete Equipment</h3>
+                <label class="form-wide">Equipment<select name="equipmentId" required>${options(state.equipment, 'equipmentId', e => `${e.name} (${e.equipmentId})`)}</select></label>
+                <div class="form-wide actions"><button class="danger" type="submit">Delete Equipment</button></div>
+            </form>
+        </div>
+        <div class="panel"><h3>Floors</h3>${table(['#','Name','Rooms','Occupancy','Rate'], floorRows, 'No floors available.')}</div>
+        <div class="panel"><h3>Rooms</h3>${table(['ID','Floor','Name','Location','Occupancy','Equipment'], roomRows, 'No rooms available.')}</div>
+        <div class="panel"><h3>Equipment</h3>${table(['ID','Name','Room','Type','Energy','Status'], equipmentRows, 'No equipment available.')}</div>
+    `;
+}
+
+function renderOccupancy() {
+    const rows = state.rooms.map(r => `
+        <tr><td>${escapeHtml(r.componentId)}</td><td>${escapeHtml(r.name)}</td><td>${r.floorNumber}</td><td>${r.currentOccupancy}/${r.capacity}</td><td>${number(r.occupancyRate)}%</td></tr>
+    `);
+    return `
+        <div class="panel">
+            <h2>4. Occupancy</h2>
+            <form data-action="occupancy-set">
+                <label>Room<select name="roomId" required>${options(state.rooms, 'componentId', r => `${r.name} (${r.currentOccupancy}/${r.capacity})`)}</select></label>
+                <label>New Occupancy<input name="count" type="number" min="0" required></label>
+                <div class="form-wide actions">
+                    <button type="submit">Set Occupancy</button>
+                    <button type="button" class="secondary" data-click="occupancy-inc">Add One Occupant</button>
+                    <button type="button" class="secondary" data-click="occupancy-dec">Remove One Occupant</button>
+                </div>
+            </form>
+        </div>
+        <div class="panel"><h3>Room Occupancy</h3>${table(['ID','Room','Floor','Occupancy','Rate'], rows, 'No rooms available.')}</div>
+    `;
+}
+
+function renderLighting() {
+    const rows = state.lights.map(l => `
+        <tr>
+            <td>${escapeHtml(l.lightId)}</td><td>${escapeHtml(l.location)}</td>
+            <td>${l.on ? badge('ON', 'ok') : badge('OFF', 'danger')}</td><td>${l.brightness}%</td>
+        </tr>
+    `);
+    return `
+        <div class="panel">
+            <h2>5. Lighting</h2>
+            <div class="split">
+                <form data-action="light-add">
+                    <h3 class="form-wide">Add Light</h3>
+                    <label class="form-wide">Location<input name="location" required placeholder="Garden Path"></label>
+                    <div class="form-wide actions"><button type="submit">Add Light</button></div>
+                </form>
+                <form data-action="light-edit">
+                    <h3 class="form-wide">Edit Light</h3>
+                    <label>Light<select name="lightId" required>${options(state.lights, 'lightId', l => `${l.location} (${l.lightId})`)}</select></label>
+                    <label>Location<input name="location" required></label>
+                    <label>Brightness<input name="brightness" type="number" min="0" max="100" required></label>
+                    <div class="form-wide actions"><button type="submit">Save Light</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="split">
+                <form data-action="light-delete">
+                    <h3 class="form-wide">Delete Light</h3>
+                    <label class="form-wide">Light<select name="lightId" required>${options(state.lights, 'lightId', l => `${l.location} (${l.lightId})`)}</select></label>
+                    <div class="form-wide actions"><button class="danger" type="submit">Delete Light</button></div>
+                </form>
+                <form data-action="light-one">
+                    <h3 class="form-wide">Control One Light</h3>
+                    <label class="form-wide">Light<select name="lightId" required>${options(state.lights, 'lightId', l => `${l.location} (${l.lightId})`)}</select></label>
+                    <div class="form-wide actions">
+                        <button type="submit" name="mode" value="on">Turn ON</button>
+                        <button type="submit" name="mode" value="off" class="secondary">Turn OFF</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="panel split">
+            <div>
+                <h3>All Lights</h3>
+                <div class="actions">
+                    <button data-click="lights-all-on">Turn All ON</button>
+                    <button data-click="lights-all-off" class="secondary">Turn All OFF</button>
+                    <button data-click="lighting-auto" class="secondary">Run Automatic Control</button>
+                </div>
+            </div>
+            <form data-action="lighting-schedule">
+                <h3 class="form-wide">Automatic Schedule</h3>
+                <label>ON Time<input name="onTime" type="time" required value="18:00"></label>
+                <label>OFF Time<input name="offTime" type="time" required value="06:00"></label>
+                <div class="form-wide actions"><button type="submit">Set Schedule</button></div>
+            </form>
+        </div>
+        <div class="panel"><h3>Lights</h3>${table(['ID','Location','State','Brightness'], rows, 'No lights available.')}</div>
+    `;
+}
+
+function renderSecurity() {
+    const logRows = state.security.accessLogs.map(l => `
+        <tr><td>${escapeHtml(l.logId)}</td><td>${escapeHtml(l.userId)}</td><td>${escapeHtml(l.location)}</td><td>${escapeHtml(l.accessType)}</td><td>${l.authorized ? badge('YES', 'ok') : badge('NO', 'danger')}</td></tr>
+    `);
+    const incidentRows = state.security.incidents.map(i => `
+        <tr><td>${escapeHtml(i.incidentId)}</td><td>${escapeHtml(i.type)}</td><td>${escapeHtml(i.description)}</td><td>${severityBadge(i.severity)}</td><td>${statusBadge(i.status)}</td></tr>
+    `);
+    const alarmRows = state.security.alarms.map(a => `
+        <tr><td>${escapeHtml(a.alarmId)}</td><td>${escapeHtml(a.alarmType)}</td><td>${escapeHtml(a.location)}</td><td>${a.active ? badge('ACTIVE', 'danger') : badge('INACTIVE', 'ok')}</td></tr>
+    `);
+    return `
+        <div class="panel">
+            <h2>6. Security</h2>
+            <div class="actions">
+                <span class="badge ${state.security.surveillanceActive ? 'ok' : 'danger'}">Surveillance ${state.security.surveillanceActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                <button data-click="surveillance-on">Activate Surveillance</button>
+                <button data-click="surveillance-off" class="secondary">Deactivate Surveillance</button>
+            </div>
+        </div>
+        <div class="panel triple">
+            <form data-action="access-add">
+                <h3 class="form-wide">Add Access Log</h3>
+                <label>User ID<input name="userId" required></label>
+                <label>Location<input name="location" required></label>
+                <label>Type<select name="accessType"><option>ENTRY</option><option>EXIT</option></select></label>
+                <label>Authorized<select name="authorized"><option value="true">Yes</option><option value="false">No</option></select></label>
+                <div class="form-wide actions"><button type="submit">Add Log</button></div>
+            </form>
+            <form data-action="incident-add">
+                <h3 class="form-wide">Add Incident</h3>
+                <label>Type<input name="type" required></label>
+                <label>Severity<select name="severity"><option>INFO</option><option>WARNING</option><option>HIGH</option><option>CRITICAL</option></select></label>
+                <label class="form-wide">Description<textarea name="description" required></textarea></label>
+                <div class="form-wide actions"><button type="submit">Add Incident</button></div>
+            </form>
+            <form data-action="alarm-add">
+                <h3 class="form-wide">Trigger Alarm</h3>
+                <label>Type<input name="type" required></label>
+                <label>Location<input name="location" required></label>
+                <div class="form-wide actions"><button type="submit">Trigger Alarm</button></div>
+            </form>
+        </div>
+        <div class="panel triple">
+            <form data-action="access-delete">
+                <h3 class="form-wide">Delete Access Log</h3>
+                <label class="form-wide">Log<select name="logId" required>${options(state.security.accessLogs, 'logId', l => `${l.userId} ${l.accessType} (${l.logId})`)}</select></label>
+                <div class="form-wide actions"><button class="danger" type="submit">Delete Log</button></div>
+            </form>
+            <form data-action="incident-update">
+                <h3 class="form-wide">Update Incident</h3>
+                <label>Incident<select name="incidentId" required>${options(state.security.incidents, 'incidentId', i => `${i.type} (${i.incidentId})`)}</select></label>
+                <label>Status<select name="status"><option>OPEN</option><option>INVESTIGATING</option><option>RESOLVED</option></select></label>
+                <div class="form-wide actions">
+                    <button type="submit">Update</button>
+                    <button type="button" class="danger" data-click="incident-delete">Delete Incident</button>
+                </div>
+            </form>
+            <form data-action="alarm-control">
+                <h3 class="form-wide">Alarm Control</h3>
+                <label class="form-wide">Alarm<select name="alarmId" required>${options(state.security.alarms, 'alarmId', a => `${a.alarmType} (${a.alarmId})`)}</select></label>
+                <div class="form-wide actions">
+                    <button type="submit" name="mode" value="deactivate">Deactivate</button>
+                    <button type="submit" name="mode" value="delete" class="danger">Delete Alarm</button>
+                </div>
+            </form>
+        </div>
+        <div class="panel"><h3>Access Logs</h3>${table(['ID','User','Location','Type','Authorized'], logRows, 'No access logs available.')}</div>
+        <div class="panel"><h3>Incidents</h3>${table(['ID','Type','Description','Severity','Status'], incidentRows, 'No incidents available.')}</div>
+        <div class="panel"><h3>Alarms</h3>${table(['ID','Type','Location','State'], alarmRows, 'No alarms available.')}</div>
+    `;
+}
+
+function renderAlerts() {
+    const activeRows = state.alerts.active.map(a => `
+        <tr><td>${escapeHtml(a.alertId)}</td><td>${escapeHtml(a.type)}</td><td>${escapeHtml(a.message)}</td><td>${severityBadge(a.severity)}</td><td>${a.acknowledged ? badge('YES', 'ok') : badge('NO', 'warn')}</td></tr>
+    `);
+    const resolvedRows = state.alerts.resolved.map(a => `
+        <tr><td>${escapeHtml(a.alertId)}</td><td>${escapeHtml(a.type)}</td><td>${escapeHtml(a.message)}</td><td>${severityBadge(a.severity)}</td><td>${a.acknowledged ? 'Yes' : 'No'}</td></tr>
+    `);
+    return `
+        <div class="panel">
+            <h2>7. Alerts</h2>
+            <div class="split">
+                <form data-action="alert-add">
+                    <h3 class="form-wide">Add Alert</h3>
+                    <label>Type<input name="type" required placeholder="SECURITY_BREACH"></label>
+                    <label>Severity<select name="severity"><option>INFO</option><option>WARNING</option><option>HIGH</option><option>CRITICAL</option></select></label>
+                    <label class="form-wide">Message<textarea name="message" required></textarea></label>
+                    <div class="form-wide actions"><button type="submit">Create Alert</button></div>
+                </form>
+                <form data-action="alert-edit">
+                    <h3 class="form-wide">Edit Active Alert</h3>
+                    <label class="form-wide">Alert<select name="alertId" required>${options(state.alerts.active, 'alertId', a => `${a.type} (${a.alertId})`)}</select></label>
+                    <label>Severity<select name="severity"><option>INFO</option><option>WARNING</option><option>HIGH</option><option>CRITICAL</option></select></label>
+                    <label class="form-wide">Message<textarea name="message" required></textarea></label>
+                    <div class="form-wide actions"><button type="submit">Save Alert</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="panel">
+            <form data-action="alert-control">
+                <h3 class="form-wide">Active Alert Actions</h3>
+                <label class="form-wide">Alert<select name="alertId" required>${options(state.alerts.active, 'alertId', a => `${a.type} (${a.alertId})`)}</select></label>
+                <div class="form-wide actions">
+                    <button type="submit" name="mode" value="ack">Acknowledge</button>
+                    <button type="submit" name="mode" value="resolve" class="secondary">Resolve</button>
+                    <button type="submit" name="mode" value="delete" class="danger">Delete</button>
+                </div>
+            </form>
+        </div>
+        <div class="panel"><h3>Active Alerts</h3>${table(['ID','Type','Message','Severity','Acknowledged'], activeRows, 'No active alerts.')}</div>
+        <div class="panel"><h3>Resolved Alerts</h3>${table(['ID','Type','Message','Severity','Acknowledged'], resolvedRows, 'No resolved alerts.')}</div>
+    `;
+}
+
+function renderReports() {
+    return `
+        <div class="panel">
+            <h2>8. Reports</h2>
+            <form data-action="report-get">
+                <label>Report Type
+                    <select name="type">
+                        <option>ENERGY</option><option>OCCUPANCY</option><option>EQUIPMENT</option><option>SECURITY</option><option>LIGHTING</option><option>COMBINED</option>
+                    </select>
+                </label>
+                <div class="actions">
+                    <button type="submit">Generate Report</button>
+                    <button type="button" data-click="report-export" class="secondary">Export Selected</button>
+                </div>
+            </form>
+        </div>
+        <div class="panel"><h3>Report Output</h3><pre>${escapeHtml(state.report || 'Choose a report type and generate it.')}</pre></div>
+    `;
+}
+
+function renderStatus() {
+    const building = state.status?.building || state.building || {};
+    return `
+        <div class="panel">
+            <h2>9. View Complete Status</h2>
+            <div class="split">
+                <div>
+                    <h3>Building</h3>
+                    <p><strong>${escapeHtml(building.name || '')}</strong><br>${escapeHtml(building.address || '')}</p>
+                    <p>Floors: ${building.floorCount ?? 0}<br>Occupancy: ${building.totalOccupancy ?? 0}/${building.totalCapacity ?? 0}<br>Energy: ${number(building.totalEnergy)} kWh</p>
+                </div>
+                <div class="actions">
+                    <button data-click="status-refresh">Refresh Complete Status</button>
+                </div>
+            </div>
+        </div>
+        <div class="panel"><h3>Summary</h3><pre>${escapeHtml(state.status?.summary || 'Press refresh to view the latest complete status.')}</pre></div>
+        <div class="panel"><h3>Current Tables</h3>${renderCompactStatusTables()}</div>
+    `;
+}
+
+function renderSave() {
+    return `
+        <div class="panel">
+            <h2>10. Save Data</h2>
+            <p>Save the current building and alert state to <strong>data/building_data.ser</strong>.</p>
+            <button data-click="save-data">Save Data</button>
+        </div>
+    `;
+}
+
+function renderLoad() {
+    return `
+        <div class="panel">
+            <h2>11. Load Data</h2>
+            <p>Load the previously saved building and alert state from <strong>data/building_data.ser</strong>.</p>
+            <button data-click="load-data">Load Data</button>
+        </div>
+    `;
+}
+
+function renderExit() {
+    return `
+        <div class="panel">
+            <h2>12. Exit</h2>
+            <p>The browser version does not shut down the Java server from here. Use this to end the current frontend session.</p>
+            <button data-click="exit-session">Exit Session</button>
+        </div>
+    `;
+}
+
+function renderCompactStatusTables() {
+    const floorRows = state.floors.map(f => `<tr><td>${f.floorNumber}</td><td>${escapeHtml(f.floorName)}</td><td>${f.roomCount}</td><td>${f.currentOccupancy}/${f.totalCapacity}</td></tr>`);
+    return table(['Floor','Name','Rooms','Occupancy'], floorRows, 'No floors available.');
+}
+
+function badge(text, kind = '') {
+    return `<span class="badge ${kind}">${escapeHtml(text)}</span>`;
+}
+
+function severityBadge(value) {
+    const severity = String(value || '').toUpperCase();
+    const kind = severity === 'CRITICAL' || severity === 'HIGH' ? 'danger' : severity === 'WARNING' ? 'warn' : 'ok';
+    return badge(severity, kind);
+}
+
+function statusBadge(value) {
+    const status = String(value || '').toUpperCase();
+    const kind = status === 'OPERATIONAL' || status === 'RESOLVED' ? 'ok' : status === 'OPEN' || status === 'MALFUNCTIONING' ? 'danger' : 'warn';
+    return badge(status, kind);
+}
+
+function formData(form) {
+    return Object.fromEntries(new FormData(form).entries());
+}
+
+function firstValue(selector) {
+    const el = document.querySelector(selector);
+    return el ? el.value : '';
+}
+
+async function runAndRefresh(task, success) {
+    try {
+        await task();
+        await refreshAll();
+        setNotice(success);
+    } catch (err) {
+        setNotice(err.message, 'error');
+    }
+}
+
+document.addEventListener('click', async (event) => {
+    const menuButton = event.target.closest('[data-menu]');
+    if (menuButton) {
+        state.active = menuButton.dataset.menu;
+        renderShell();
+        return;
+    }
+
+    const button = event.target.closest('[data-click]');
+    if (!button) return;
+    const action = button.dataset.click;
+
+    const actions = {
+        logout: () => runAndRefresh(() => api('/api/logout', { method: 'POST' }), 'Logged out.'),
+        'occupancy-inc': () => runAndRefresh(() => api(`/api/occupancy/${firstValue('[data-action="occupancy-set"] select[name="roomId"]')}/increment`, { method: 'POST' }), 'Occupancy increased.'),
+        'occupancy-dec': () => runAndRefresh(() => api(`/api/occupancy/${firstValue('[data-action="occupancy-set"] select[name="roomId"]')}/decrement`, { method: 'POST' }), 'Occupancy decreased.'),
+        'lights-all-on': () => runAndRefresh(() => api('/api/lights/all', { method: 'POST', body: { on: true } }), 'All lights turned on.'),
+        'lights-all-off': () => runAndRefresh(() => api('/api/lights/all', { method: 'POST', body: { on: false } }), 'All lights turned off.'),
+        'lighting-auto': () => runAndRefresh(() => api('/api/lighting/auto', { method: 'POST' }), 'Automatic lighting control applied.'),
+        'surveillance-on': () => runAndRefresh(() => api('/api/security/surveillance', { method: 'POST', body: { active: true } }), 'Surveillance activated.'),
+        'surveillance-off': () => runAndRefresh(() => api('/api/security/surveillance', { method: 'POST', body: { active: false } }), 'Surveillance deactivated.'),
+        'incident-delete': () => runAndRefresh(() => api(`/api/security/incidents/${firstValue('[data-action="incident-update"] select[name="incidentId"]')}`, { method: 'DELETE' }), 'Incident deleted.'),
+        'report-export': () => {
+            const type = firstValue('[data-action="report-get"] select[name="type"]');
+            return runAndRefresh(() => api('/api/reports/export', { method: 'POST', body: { type } }), 'Report exported.');
+        },
+        'status-refresh': async () => {
+            try {
+                state.status = await api('/api/status');
+                renderShell();
+                setNotice('Complete status refreshed.');
+            } catch (err) {
+                setNotice(err.message, 'error');
+            }
+        },
+        'save-data': () => runAndRefresh(() => api('/api/save', { method: 'POST' }), 'Data saved.'),
+        'load-data': () => runAndRefresh(() => api('/api/load', { method: 'POST' }), 'Data loaded.'),
+        'exit-session': async () => {
+            await runAndRefresh(() => api('/api/logout', { method: 'POST' }), 'Session ended. You can close the tab or stop the server from the terminal.');
+            state.active = 'login';
+            renderShell();
+        }
+    };
+
+    if (actions[action]) {
+        await actions[action]();
+    }
+});
+
+document.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const action = form.dataset.action;
+    const data = formData(form);
+    const submitter = event.submitter;
+
+    const handlers = {
+        login: () => api('/api/login', { method: 'POST', body: data }),
+        'building-update': () => api('/api/building', { method: 'PUT', body: data }),
+        'floor-add': () => api('/api/floors', { method: 'POST', body: { name: data.name, number: Number(data.number) } }),
+        'floor-edit': () => api(`/api/floors/${data.floorNumber}`, { method: 'PUT', body: { name: data.name } }),
+        'floor-delete': () => api(`/api/floors/${data.floorNumber}`, { method: 'DELETE' }),
+        'room-add': () => api('/api/rooms', { method: 'POST', body: { floorNumber: Number(data.floorNumber), name: data.name, location: data.location, capacity: Number(data.capacity) } }),
+        'room-edit': () => api(`/api/rooms/${data.roomId}`, { method: 'PUT', body: { name: data.name, location: data.location, capacity: Number(data.capacity) } }),
+        'room-delete': () => api(`/api/rooms/${data.roomId}`, { method: 'DELETE' }),
+        'equipment-add': () => api('/api/equipment', { method: 'POST', body: { roomId: data.roomId, name: data.name, type: data.type, energyConsumption: Number(data.energyConsumption) } }),
+        'equipment-edit': () => api(`/api/equipment/${data.equipmentId}`, { method: 'PUT', body: { name: data.name, location: data.location, type: data.type, energyConsumption: Number(data.energyConsumption), status: data.status } }),
+        'equipment-delete': () => api(`/api/equipment/${data.equipmentId}`, { method: 'DELETE' }),
+        'occupancy-set': () => api(`/api/occupancy/${data.roomId}`, { method: 'POST', body: { count: Number(data.count) } }),
+        'light-add': () => api('/api/lights', { method: 'POST', body: { location: data.location } }),
+        'light-edit': () => api(`/api/lights/${data.lightId}`, { method: 'PUT', body: { location: data.location, brightness: Number(data.brightness) } }),
+        'light-delete': () => api(`/api/lights/${data.lightId}`, { method: 'DELETE' }),
+        'light-one': () => api(`/api/lights/${data.lightId}/${submitter.value}`, { method: 'POST' }),
+        'lighting-schedule': () => api('/api/lighting/schedule', { method: 'POST', body: data }),
+        'access-add': () => api('/api/security/access-logs', { method: 'POST', body: { userId: data.userId, location: data.location, accessType: data.accessType, authorized: data.authorized === 'true' } }),
+        'access-delete': () => api(`/api/security/access-logs/${data.logId}`, { method: 'DELETE' }),
+        'incident-add': () => api('/api/security/incidents', { method: 'POST', body: data }),
+        'incident-update': () => api(`/api/security/incidents/${data.incidentId}`, { method: 'PUT', body: { status: data.status } }),
+        'alarm-add': () => api('/api/security/alarms', { method: 'POST', body: data }),
+        'alarm-control': () => submitter.value === 'delete'
+            ? api(`/api/security/alarms/${data.alarmId}`, { method: 'DELETE' })
+            : api(`/api/security/alarms/${data.alarmId}/deactivate`, { method: 'POST' }),
+        'alert-add': () => api('/api/alerts', { method: 'POST', body: data }),
+        'alert-edit': () => api(`/api/alerts/${data.alertId}`, { method: 'PUT', body: { message: data.message, severity: data.severity } }),
+        'alert-control': () => {
+            if (submitter.value === 'delete') return api(`/api/alerts/${data.alertId}`, { method: 'DELETE' });
+            if (submitter.value === 'resolve') return api(`/api/alerts/${data.alertId}/resolve`, { method: 'POST' });
+            return api(`/api/alerts/${data.alertId}/ack`, { method: 'POST' });
+        },
+        'report-get': async () => {
+            const result = data.type === 'COMBINED'
+                ? await api('/api/reports/combined')
+                : await api(`/api/reports/${data.type}`);
+            state.report = result.text;
+        }
+    };
+
+    if (!handlers[action]) return;
+
+    try {
+        await handlers[action]();
+        if (action !== 'report-get') {
+            form.reset();
+        }
+        await refreshAll();
+        if (action === 'report-get') {
+            state.active = 'reports';
+            renderShell();
+        }
+        setNotice('Action completed successfully.');
+    } catch (err) {
+        setNotice(err.message, 'error');
+    }
+});
+
+refreshAll()
+    .then(() => setNotice('Dashboard ready. Log in before running protected actions.'))
+    .catch(err => setNotice(err.message, 'error'));
+</script>
+</body>
+</html>

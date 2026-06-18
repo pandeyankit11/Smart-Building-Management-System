@@ -2,34 +2,49 @@ package com.smartbuilding.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.smartbuilding.util.IdGenerator;
 
 /**
  * Floor class extends BuildingComponent.
  * Represents a floor in the building with multiple rooms.
  */
 public class Floor extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private int floorNumber;
     private List<Room> rooms;
 
     // Overloaded constructors
     public Floor(String componentId, String name, String location, int floorNumber) {
         super(componentId, name, location);
+        if (floorNumber <= 0) {
+            throw new IllegalArgumentException("Floor number must be greater than zero");
+        }
         this.floorNumber = floorNumber;
         this.rooms = new ArrayList<>();
     }
 
     public Floor(String name, int floorNumber) {
-        this("FLR" + System.currentTimeMillis() % 10000, name, "Building", floorNumber);
+        this(IdGenerator.next("FLR"), name, "Building", floorNumber);
     }
 
     public void addRoom(Room room) {
+        if (room == null) {
+            throw new IllegalArgumentException("Room cannot be null");
+        }
+        if (getRoomById(room.getComponentId()) != null) {
+            throw new IllegalArgumentException("Room ID already exists: " + room.getComponentId());
+        }
         rooms.add(room);
         System.out.println("Room " + room.getName() + " added to floor " + floorNumber);
     }
 
-    public void removeRoom(String roomId) {
-        rooms.removeIf(room -> room.getComponentId().equals(roomId));
-        System.out.println("Room with ID " + roomId + " removed from floor " + floorNumber);
+    public boolean removeRoom(String roomId) {
+        boolean removed = rooms.removeIf(room -> room.getComponentId().equals(roomId));
+        if (removed) {
+            System.out.println("Room with ID " + roomId + " removed from floor " + floorNumber);
+        }
+        return removed;
     }
 
     public Room getRoomById(String roomId) {

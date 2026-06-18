@@ -5,6 +5,7 @@ package com.smartbuilding.exception;
  * Thrown when user provides invalid input data.
  */
 public class InvalidInputException extends Exception {
+    private static final long serialVersionUID = 1L;
     private String fieldName;
     private String invalidValue;
     private String expectedFormat;

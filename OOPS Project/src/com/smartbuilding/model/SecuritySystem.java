@@ -1,5 +1,8 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
+import com.smartbuilding.exception.InvalidInputException;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,13 +12,17 @@ import java.util.List;
  * Includes access logs, surveillance, alarm systems, and incident reports.
  */
 public class SecuritySystem extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private List<AccessLog> accessLogs;
     private List<Incident> incidents;
     private List<Alarm> alarms;
     private boolean surveillanceActive;
 
     // Nested static class - AccessLog
-    public static class AccessLog {
+    public static class AccessLog implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String logId;
         private String userId;
         private String location;
@@ -48,7 +55,9 @@ public class SecuritySystem extends BuildingComponent {
     }
 
     // Nested static class - Incident
-    public static class Incident {
+    public static class Incident implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String incidentId;
         private String type;
         private String description;
@@ -66,8 +75,13 @@ public class SecuritySystem extends BuildingComponent {
         }
 
         public void updateStatus(String newStatus) {
-            this.status = newStatus;
-            System.out.println("Incident " + incidentId + " status updated to: " + newStatus);
+            String normalized = newStatus == null ? "" : newStatus.trim().toUpperCase();
+            if (!normalized.equals("OPEN") && !normalized.equals("INVESTIGATING")
+                    && !normalized.equals("RESOLVED")) {
+                throw new IllegalArgumentException("Invalid incident status: " + newStatus);
+            }
+            this.status = normalized;
+            System.out.println("Incident " + incidentId + " status updated to: " + normalized);
         }
 
         @Override
@@ -86,7 +100,9 @@ public class SecuritySystem extends BuildingComponent {
     }
 
     // Nested static class - Alarm
-    public static class Alarm {
+    public static class Alarm implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String alarmId;
         private String alarmType;
         private LocalDateTime triggeredTime;
@@ -130,17 +146,22 @@ public class SecuritySystem extends BuildingComponent {
     }
 
     public SecuritySystem(String name) {
-        this("SEC" + System.currentTimeMillis() % 10000, name, "Building");
+        this(IdGenerator.next("SEC"), name, "Building");
     }
 
     // Overloaded methods
     public void logAccess(String userId, String location, String accessType, boolean authorized) {
+        String normalizedType = accessType == null ? "" : accessType.trim().toUpperCase();
+        if (!normalizedType.equals("ENTRY") && !normalizedType.equals("EXIT")) {
+            throw new IllegalArgumentException("Access type must be ENTRY or EXIT");
+        }
         AccessLog log = new AccessLog(
-            "LOG" + System.currentTimeMillis() % 10000,
-            userId, location, LocalDateTime.now(), accessType, authorized
+            IdGenerator.next("LOG"),
+            requireText(userId, "User ID"), requireText(location, "Location"),
+            LocalDateTime.now(), normalizedType, authorized
         );
         accessLogs.add(log);
-        System.out.println("Access logged: " + userId + " " + accessType + " at " + location);
+        System.out.println("Access logged: " + userId + " " + normalizedType + " at " + location);
     }
 
     public void logAccess(String userId, String location) {
@@ -149,8 +170,9 @@ public class SecuritySystem extends BuildingComponent {
 
     public void reportIncident(String type, String description, String severity) {
         Incident incident = new Incident(
-            "INC" + System.currentTimeMillis() % 10000,
-            type, description, LocalDateTime.now(), severity
+            IdGenerator.next("INC"),
+            requireText(type, "Incident type"), requireText(description, "Description"),
+            LocalDateTime.now(), normalizeSeverity(severity)
         );
         incidents.add(incident);
         System.out.println("Incident reported: " + type + " - " + description);
@@ -158,14 +180,14 @@ public class SecuritySystem extends BuildingComponent {
 
     public void triggerAlarm(String alarmType, String location) {
         Alarm alarm = new Alarm(
-            "ALM" + System.currentTimeMillis() % 10000,
-            alarmType, location
+            IdGenerator.next("ALM"),
+            requireText(alarmType, "Alarm type"), requireText(location, "Location")
         );
         alarms.add(alarm);
         System.out.println("Alarm triggered: " + alarmType + " at " + location);
     }
 
-    public void investigateIncident(String incidentId) throws Exception {
+    public void investigateIncident(String incidentId) throws InvalidInputException {
         for (Incident incident : incidents) {
             if (incident.getIncidentId().equals(incidentId)) {
                 incident.updateStatus("INVESTIGATING");
@@ -173,10 +195,10 @@ public class SecuritySystem extends BuildingComponent {
                 return;
             }
         }
-        throw new Exception("Incident with ID " + incidentId + " not found");
+        throw new InvalidInputException("incidentId", incidentId, "existing incident ID");
     }
 
-    public void resolveIncident(String incidentId) throws Exception {
+    public void resolveIncident(String incidentId) throws InvalidInputException {
         for (Incident incident : incidents) {
             if (incident.getIncidentId().equals(incidentId)) {
                 incident.updateStatus("RESOLVED");
@@ -184,7 +206,46 @@ public class SecuritySystem extends BuildingComponent {
                 return;
             }
         }
-        throw new Exception("Incident with ID " + incidentId + " not found");
+        throw new InvalidInputException("incidentId", incidentId, "existing incident ID");
+    }
+
+    public Incident getIncidentById(String incidentId) {
+        for (Incident incident : incidents) {
+            if (incident.getIncidentId().equals(incidentId)) {
+                return incident;
+            }
+        }
+        return null;
+    }
+
+    public Alarm getAlarmById(String alarmId) {
+        for (Alarm alarm : alarms) {
+            if (alarm.getAlarmId().equals(alarmId)) {
+                return alarm;
+            }
+        }
+        return null;
+    }
+
+    public boolean deleteAccessLog(String logId) {
+        return accessLogs.removeIf(log -> log.getLogId().equals(logId));
+    }
+
+    public boolean deleteIncident(String incidentId) {
+        return incidents.removeIf(incident -> incident.getIncidentId().equals(incidentId));
+    }
+
+    public boolean deactivateAlarm(String alarmId) {
+        Alarm alarm = getAlarmById(alarmId);
+        if (alarm == null) {
+            return false;
+        }
+        alarm.deactivate();
+        return true;
+    }
+
+    public boolean deleteAlarm(String alarmId) {
+        return alarms.removeIf(alarm -> alarm.getAlarmId().equals(alarmId));
     }
 
     // Vararg method - detect multiple unauthorized access attempts
@@ -235,5 +296,14 @@ public class SecuritySystem extends BuildingComponent {
 
     public void setSurveillanceActive(boolean surveillanceActive) {
         this.surveillanceActive = surveillanceActive;
+    }
+
+    private static String normalizeSeverity(String severity) {
+        String normalized = severity == null ? "" : severity.trim().toUpperCase();
+        if (!normalized.equals("INFO") && !normalized.equals("WARNING")
+                && !normalized.equals("HIGH") && !normalized.equals("CRITICAL")) {
+            throw new IllegalArgumentException("Invalid severity: " + severity);
+        }
+        return normalized;
     }
 }

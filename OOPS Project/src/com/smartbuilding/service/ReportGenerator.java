@@ -120,6 +120,7 @@ public class ReportGenerator {
         report.append("=== EQUIPMENT PERFORMANCE REPORT ===\n");
         report.append("Generated: ").append(LocalDate.now()).append("\n\n");
 
+        Map<String, Integer> totalCount = new HashMap<>();
         Map<String, Integer> operationalCount = new HashMap<>();
         Map<String, Integer> maintenanceCount = new HashMap<>();
         Map<String, Integer> malfunctionCount = new HashMap<>();
@@ -128,8 +129,10 @@ public class ReportGenerator {
             for (Room room : floor.getRooms()) {
                 for (Equipment eq : room.getEquipmentList()) {
                     String type = eq.getEquipmentType();
-                    operationalCount.put(type, operationalCount.getOrDefault(type, 0) + 1);
-                    if (eq.getStatus().equals("MAINTENANCE")) {
+                    totalCount.put(type, totalCount.getOrDefault(type, 0) + 1);
+                    if (eq.getStatus().equals("OPERATIONAL")) {
+                        operationalCount.put(type, operationalCount.getOrDefault(type, 0) + 1);
+                    } else if (eq.getStatus().equals("MAINTENANCE")) {
                         maintenanceCount.put(type, maintenanceCount.getOrDefault(type, 0) + 1);
                     } else if (eq.getStatus().equals("MALFUNCTIONING")) {
                         malfunctionCount.put(type, malfunctionCount.getOrDefault(type, 0) + 1);
@@ -139,7 +142,7 @@ public class ReportGenerator {
         }
 
         report.append("Equipment Status by Type:\n");
-        Set<String> allTypes = new HashSet<>(operationalCount.keySet());
+        Set<String> allTypes = new TreeSet<>(totalCount.keySet());
         allTypes.addAll(maintenanceCount.keySet());
         allTypes.addAll(malfunctionCount.keySet());
 
@@ -147,7 +150,7 @@ public class ReportGenerator {
             int operational = operationalCount.getOrDefault(type, 0);
             int maintenance = maintenanceCount.getOrDefault(type, 0);
             int malfunction = malfunctionCount.getOrDefault(type, 0);
-            int total = operational + maintenance + malfunction;
+            int total = totalCount.getOrDefault(type, 0);
 
             report.append("  ").append(type).append(": Total=").append(total)
                   .append(", Operational=").append(operational)
@@ -167,7 +170,7 @@ public class ReportGenerator {
         for (Floor floor : building.getFloors()) {
             for (Room room : floor.getRooms()) {
                 for (Equipment eq : room.getEquipmentList()) {
-                    if (eq.getEquipmentType().equals(equipmentType)) {
+                    if (eq.getEquipmentType().equalsIgnoreCase(equipmentType)) {
                         report.append(count++).append(". ").append(eq).append("\n");
                     }
                 }
@@ -255,7 +258,8 @@ public class ReportGenerator {
         combinedReport.append("=== COMBINED SYSTEM REPORT ===\n\n");
 
         for (String type : reportTypes) {
-            switch (type.toUpperCase()) {
+            String normalizedType = type == null ? "" : type.trim().toUpperCase();
+            switch (normalizedType) {
                 case "ENERGY":
                     combinedReport.append(generateEnergyReport()).append("\n");
                     break;

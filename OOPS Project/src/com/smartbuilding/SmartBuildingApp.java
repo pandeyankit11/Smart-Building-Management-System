@@ -53,6 +53,8 @@ public class SmartBuildingApp {
                 System.err.println("EQUIPMENT ERROR: " + e.getMessage());
             } else if (e instanceof FileOperationException) {
                 System.err.println("FILE I/O ERROR: " + e.getMessage());
+            } else if (e instanceof InvalidInputException) {
+                System.err.println("INPUT ERROR: " + e.getMessage());
             } else {
                 System.err.println("SYSTEM ERROR: " + e.getMessage());
                 e.printStackTrace();

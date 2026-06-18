@@ -1,5 +1,8 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.exception.InvalidInputException;
+import com.smartbuilding.util.IdGenerator;
+import java.io.Serializable;
 import java.time.LocalDate;
 
 /**
@@ -7,6 +10,8 @@ import java.time.LocalDate;
  * Represents equipment/devices in the building.
  */
 public class Equipment extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private String equipmentType;
     private String status; // OPERATIONAL, MAINTENANCE, MALFUNCTIONING
     private double energyConsumption;
@@ -14,7 +19,9 @@ public class Equipment extends BuildingComponent {
     private LocalDate nextMaintenanceDate;
 
     // Nested static class for equipment specifications
-    public static class EquipmentSpecs {
+    public static class EquipmentSpecs implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String modelNumber;
         private String manufacturer;
         private double powerRating;
@@ -46,6 +53,9 @@ public class Equipment extends BuildingComponent {
     public Equipment(String componentId, String name, String location, String equipmentType,
                      EquipmentSpecs specs, double energyConsumption) {
         super(componentId, name, location);
+        if (energyConsumption < 0) {
+            throw new IllegalArgumentException("Energy consumption cannot be negative");
+        }
         this.equipmentType = equipmentType;
         this.status = "OPERATIONAL";
         this.specs = specs;
@@ -55,11 +65,11 @@ public class Equipment extends BuildingComponent {
     }
 
     public Equipment(String name, String location, String equipmentType, EquipmentSpecs specs) {
-        this("EQP" + System.currentTimeMillis() % 10000, name, location, equipmentType, specs, 0.0);
+        this(IdGenerator.next("EQP"), name, location, equipmentType, specs, 0.0);
     }
 
     public Equipment(String name, String location, String equipmentType, EquipmentSpecs specs, double energyConsumption) {
-        this("EQP" + System.currentTimeMillis() % 10000, name, location, equipmentType, specs, energyConsumption);
+        this(IdGenerator.next("EQP"), name, location, equipmentType, specs, energyConsumption);
     }
 
     public Equipment(String name, String equipmentType, double energyConsumption) {
@@ -67,25 +77,34 @@ public class Equipment extends BuildingComponent {
     }
 
     // Overloaded methods
-    public void updateStatus(String newStatus) throws Exception {
-        if (!newStatus.equals("OPERATIONAL") && !newStatus.equals("MAINTENANCE") && !newStatus.equals("MALFUNCTIONING")) {
-            throw new Exception("Invalid status. Must be OPERATIONAL, MAINTENANCE, or MALFUNCTIONING");
+    public void updateStatus(String newStatus) throws InvalidInputException {
+        String normalizedStatus = newStatus == null ? "" : newStatus.trim().toUpperCase();
+        if (!normalizedStatus.equals("OPERATIONAL") && !normalizedStatus.equals("MAINTENANCE")
+                && !normalizedStatus.equals("MALFUNCTIONING")) {
+            throw new InvalidInputException("status", String.valueOf(newStatus),
+                    "OPERATIONAL, MAINTENANCE, or MALFUNCTIONING");
         }
-        this.status = newStatus;
-        System.out.println("Equipment " + name + " status changed to: " + newStatus);
+        this.status = normalizedStatus;
+        System.out.println("Equipment " + name + " status changed to: " + normalizedStatus);
     }
 
-    public void updateStatus(String newStatus, String reason) throws Exception {
+    public void updateStatus(String newStatus, String reason) throws InvalidInputException {
         updateStatus(newStatus);
         System.out.println("Reason: " + reason);
     }
 
     public void recordEnergyUsage(double usage) {
+        if (usage < 0) {
+            throw new IllegalArgumentException("Energy usage cannot be negative");
+        }
         this.energyConsumption = usage;
         System.out.println("Energy consumption recorded for " + name + ": " + usage + " kWh");
     }
 
     public void scheduleMaintenance(LocalDate date) {
+        if (date == null || date.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Maintenance date cannot be null or in the past");
+        }
         this.nextMaintenanceDate = date;
         System.out.println("Maintenance scheduled for " + name + " on " + date);
     }
@@ -113,6 +132,23 @@ public class Equipment extends BuildingComponent {
     public LocalDate getNextMaintenanceDate() { return nextMaintenanceDate; }
     public EquipmentSpecs getSpecs() { return specs; }
 
-    public void setEquipmentType(String equipmentType) { this.equipmentType = equipmentType; }
-    public void setEnergyConsumption(double energyConsumption) { this.energyConsumption = energyConsumption; }
+    public void updateDetails(String name, String location, String equipmentType,
+                              double energyConsumption, String status) throws InvalidInputException {
+        setName(name);
+        setLocation(location);
+        setEquipmentType(equipmentType);
+        setEnergyConsumption(energyConsumption);
+        updateStatus(status);
+        System.out.println("Equipment details updated: " + this.name);
+    }
+
+    public void setEquipmentType(String equipmentType) {
+        this.equipmentType = requireText(equipmentType, "Equipment type").toUpperCase();
+    }
+    public void setEnergyConsumption(double energyConsumption) {
+        if (energyConsumption < 0) {
+            throw new IllegalArgumentException("Energy consumption cannot be negative");
+        }
+        this.energyConsumption = energyConsumption;
+    }
 }

@@ -2,12 +2,16 @@ package com.smartbuilding.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.smartbuilding.exception.InvalidInputException;
+import com.smartbuilding.util.IdGenerator;
 
 /**
  * Room class extends BuildingComponent.
  * Represents a room/zone in the building.
  */
 public class Room extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private int capacity;
     private int currentOccupancy;
     private List<Equipment> equipmentList;
@@ -15,13 +19,16 @@ public class Room extends BuildingComponent {
     // Overloaded constructors (2+ required)
     public Room(String componentId, String name, String location, int capacity) {
         super(componentId, name, location);
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Room capacity must be greater than zero");
+        }
         this.capacity = capacity;
         this.currentOccupancy = 0;
         this.equipmentList = new ArrayList<>();
     }
 
     public Room(String name, String location, int capacity) {
-        this("RM" + System.currentTimeMillis() % 10000, name, location, capacity);
+        this(IdGenerator.next("RM"), name, location, capacity);
     }
 
     public Room(String name, int capacity) {
@@ -34,13 +41,22 @@ public class Room extends BuildingComponent {
     }
 
     public void addEquipment(Equipment equipment) {
+        if (equipment == null) {
+            throw new IllegalArgumentException("Equipment cannot be null");
+        }
+        if (getEquipmentById(equipment.getComponentId()) != null) {
+            throw new IllegalArgumentException("Equipment ID already exists: " + equipment.getComponentId());
+        }
         equipmentList.add(equipment);
         System.out.println("Equipment " + equipment.getName() + " added to room " + name);
     }
 
-    public void removeEquipment(String equipmentId) {
-        equipmentList.removeIf(eq -> eq.getComponentId().equals(equipmentId));
-        System.out.println("Equipment with ID " + equipmentId + " removed from room " + name);
+    public boolean removeEquipment(String equipmentId) {
+        boolean removed = equipmentList.removeIf(eq -> eq.getComponentId().equals(equipmentId));
+        if (removed) {
+            System.out.println("Equipment with ID " + equipmentId + " removed from room " + name);
+        }
+        return removed;
     }
 
     public Equipment getEquipmentById(String equipmentId) {
@@ -56,7 +72,7 @@ public class Room extends BuildingComponent {
     public List<Equipment> getEquipmentByStatus(String status) {
         List<Equipment> result = new ArrayList<>();
         for (Equipment eq : equipmentList) {
-            if (eq.getStatus().equals(status)) {
+            if (eq.getStatus().equalsIgnoreCase(status)) {
                 result.add(eq);
             }
         }
@@ -65,32 +81,32 @@ public class Room extends BuildingComponent {
 
     public boolean hasEquipmentType(String type) {
         for (Equipment eq : equipmentList) {
-            if (eq.getEquipmentType().equals(type)) {
+            if (eq.getEquipmentType().equalsIgnoreCase(type)) {
                 return true;
             }
         }
         return false;
     }
 
-    public void updateOccupancy(int count) throws Exception {
+    public void updateOccupancy(int count) throws InvalidInputException {
         if (count < 0 || count > capacity) {
-            throw new Exception("Invalid occupancy count. Must be between 0 and " + capacity);
+            throw new InvalidInputException("occupancy", String.valueOf(count), "0-" + capacity);
         }
         this.currentOccupancy = count;
         System.out.println("Occupancy in room " + name + " updated to " + count);
     }
 
-    public void incrementOccupancy() throws Exception {
+    public void incrementOccupancy() throws InvalidInputException {
         if (currentOccupancy >= capacity) {
-            throw new Exception("Room " + name + " is at full capacity!");
+            throw new InvalidInputException("Room " + name + " is at full capacity");
         }
         currentOccupancy++;
         System.out.println("Occupancy in room " + name + " increased to " + currentOccupancy);
     }
 
-    public void decrementOccupancy() throws Exception {
+    public void decrementOccupancy() throws InvalidInputException {
         if (currentOccupancy <= 0) {
-            throw new Exception("Room " + name + " is already empty!");
+            throw new InvalidInputException("Room " + name + " is already empty");
         }
         currentOccupancy--;
         System.out.println("Occupancy in room " + name + " decreased to " + currentOccupancy);
@@ -109,6 +125,17 @@ public class Room extends BuildingComponent {
     public int getCurrentOccupancy() { return currentOccupancy; }
     public List<Equipment> getEquipmentList() { return new ArrayList<>(equipmentList); }
     public int getEquipmentCount() { return equipmentList.size(); }
+
+    public void updateDetails(String name, String location, int capacity) {
+        if (capacity <= 0 || capacity < currentOccupancy) {
+            throw new IllegalArgumentException(
+                    "Capacity must be positive and at least the current occupancy (" + currentOccupancy + ")");
+        }
+        setName(name);
+        setLocation(location);
+        this.capacity = capacity;
+        System.out.println("Room details updated: " + this.name);
+    }
 
     public double getOccupancyRate() {
         return capacity > 0 ? (double) currentOccupancy / capacity * 100 : 0;

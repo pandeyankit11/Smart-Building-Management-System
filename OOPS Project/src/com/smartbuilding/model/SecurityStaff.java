@@ -1,10 +1,13 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
 /**
  * Security Staff class extends User.
  * Handles security monitoring, access logs, and incident reports.
  */
 public class SecurityStaff extends User implements AlertListener {
+    private static final long serialVersionUID = 1L;
+
     private String badgeNumber;
     private String shift;
 
@@ -16,8 +19,8 @@ public class SecurityStaff extends User implements AlertListener {
     }
 
     public SecurityStaff(String username, String password, String shift) {
-        this("SEC" + System.currentTimeMillis() % 10000, username, password,
-             "BADGE" + System.currentTimeMillis() % 10000, shift);
+        this(IdGenerator.next("USR"), username, password,
+             IdGenerator.next("BADGE"), shift);
     }
 
     @Override

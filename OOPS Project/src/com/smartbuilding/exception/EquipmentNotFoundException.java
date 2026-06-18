@@ -5,6 +5,7 @@ package com.smartbuilding.exception;
  * Thrown when requested equipment cannot be found.
  */
 public class EquipmentNotFoundException extends Exception {
+    private static final long serialVersionUID = 1L;
     private String equipmentId;
 
     public EquipmentNotFoundException(String equipmentId) {

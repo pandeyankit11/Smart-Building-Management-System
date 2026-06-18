@@ -1,5 +1,8 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.exception.InvalidInputException;
+import com.smartbuilding.util.IdGenerator;
+import java.io.Serializable;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,12 +12,16 @@ import java.util.List;
  * Demonstrates nested non-static classes.
  */
 public class LightingSystem extends BuildingComponent {
+    private static final long serialVersionUID = 1L;
+
     private List<Light> lights;
     private LocalTime scheduleOn;
     private LocalTime scheduleOff;
 
     // Nested non-static class - Light
-    public class Light {
+    public class Light implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String lightId;
         private String location;
         private boolean isOn;
@@ -39,20 +46,23 @@ public class LightingSystem extends BuildingComponent {
             System.out.println("Light " + lightId + " at " + location + " turned OFF");
         }
 
-        public void setBrightness(int level) throws Exception {
+        public void setBrightness(int level) throws InvalidInputException {
             if (level < 0 || level > 100) {
-                throw new Exception("Brightness must be between 0 and 100");
+                throw new InvalidInputException("brightness", String.valueOf(level), "0-100");
             }
             this.brightnessLevel = level;
             System.out.println("Light " + lightId + " brightness set to " + level + "%");
         }
 
-        public void adjustBrightness(int delta) throws Exception {
+        public void adjustBrightness(int delta) throws InvalidInputException {
             int newLevel = brightnessLevel + delta;
             setBrightness(newLevel);
         }
 
         public void recordEnergyUsage(double usage) {
+            if (usage < 0) {
+                throw new IllegalArgumentException("Energy usage cannot be negative");
+            }
             this.energyUsed += usage;
         }
 
@@ -62,6 +72,10 @@ public class LightingSystem extends BuildingComponent {
         public boolean isOn() { return isOn; }
         public int getBrightnessLevel() { return brightnessLevel; }
         public double getEnergyUsed() { return energyUsed; }
+
+        public void setLocation(String location) {
+            this.location = requireText(location, "Light location");
+        }
 
         @Override
         public String toString() {
@@ -79,24 +93,30 @@ public class LightingSystem extends BuildingComponent {
     }
 
     public LightingSystem(String name) {
-        this("LIT" + System.currentTimeMillis() % 10000, name, "Outdoor");
+        this(IdGenerator.next("LIT"), name, "Outdoor");
     }
 
     // Overloaded methods
     public void addLight(String lightId, String location) {
+        if (getLightById(lightId) != null) {
+            throw new IllegalArgumentException("Light ID already exists: " + lightId);
+        }
         Light light = new Light(lightId, location);
         lights.add(light);
         System.out.println("Light added: " + lightId + " at " + location);
     }
 
     public void addLight(String location) {
-        String lightId = "LGT" + System.currentTimeMillis() % 10000;
+        String lightId = IdGenerator.next("LGT");
         addLight(lightId, location);
     }
 
-    public void removeLight(String lightId) {
-        lights.removeIf(light -> light.lightId.equals(lightId));
-        System.out.println("Light " + lightId + " removed from system");
+    public boolean removeLight(String lightId) {
+        boolean removed = lights.removeIf(light -> light.lightId.equals(lightId));
+        if (removed) {
+            System.out.println("Light " + lightId + " removed from system");
+        }
+        return removed;
     }
 
     public Light getLightById(String lightId) {
@@ -121,6 +141,9 @@ public class LightingSystem extends BuildingComponent {
     }
 
     public void setSchedule(LocalTime onTime, LocalTime offTime) {
+        if (onTime == null || offTime == null || onTime.equals(offTime)) {
+            throw new IllegalArgumentException("Lighting on/off times must be different and non-null");
+        }
         this.scheduleOn = onTime;
         this.scheduleOff = offTime;
         System.out.println("Lighting schedule set: ON at " + onTime + ", OFF at " + offTime);
@@ -128,7 +151,11 @@ public class LightingSystem extends BuildingComponent {
 
     public void autoControlBasedOnTime() {
         LocalTime currentTime = LocalTime.now();
-        if (currentTime.isAfter(scheduleOn) || currentTime.isBefore(scheduleOff)) {
+        boolean overnightSchedule = scheduleOn.isAfter(scheduleOff);
+        boolean shouldBeOn = overnightSchedule
+                ? !currentTime.isBefore(scheduleOn) || currentTime.isBefore(scheduleOff)
+                : !currentTime.isBefore(scheduleOn) && currentTime.isBefore(scheduleOff);
+        if (shouldBeOn) {
             controlAllLights(true);
         } else {
             controlAllLights(false);

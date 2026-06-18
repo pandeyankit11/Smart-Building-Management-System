@@ -1,0 +1,17 @@
+# Build output
+target/
+OOPS Project/build/
+*.class
+
+# Runtime data and generated reports
+data/
+OOPS Project/data/
+*.log
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

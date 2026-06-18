@@ -1,10 +1,13 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
 /**
  * Administrator class extends User - demonstrates hierarchical inheritance.
  * Administrators have full system control.
  */
 public class Administrator extends User implements AlertListener {
+    private static final long serialVersionUID = 1L;
+
     private String adminLevel;
 
     // Overloaded constructors
@@ -14,7 +17,7 @@ public class Administrator extends User implements AlertListener {
     }
 
     public Administrator(String username, String password) {
-        this("ADM" + System.currentTimeMillis() % 10000, username, password, "SUPER");
+        this(IdGenerator.next("ADM"), username, password, "SUPER");
     }
 
     @Override

@@ -1,10 +1,13 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
 /**
  * Maintenance Staff class extends User.
  * Maintenance staff can update equipment status and perform maintenance.
  */
 public class MaintenanceStaff extends User implements AlertListener {
+    private static final long serialVersionUID = 1L;
+
     private String staffId;
     private String specialization;
 
@@ -16,8 +19,8 @@ public class MaintenanceStaff extends User implements AlertListener {
     }
 
     public MaintenanceStaff(String username, String password, String specialization) {
-        this("STF" + System.currentTimeMillis() % 10000, username, password,
-             "STF" + System.currentTimeMillis() % 10000, specialization);
+        this(IdGenerator.next("USR"), username, password,
+             IdGenerator.next("STF"), specialization);
     }
 
     @Override

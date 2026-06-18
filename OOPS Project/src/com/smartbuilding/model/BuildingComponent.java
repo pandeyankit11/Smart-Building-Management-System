@@ -1,10 +1,14 @@
 package com.smartbuilding.model;
 
+import java.io.Serializable;
+
 /**
  * Abstract base class for all building components.
  * Demonstrates abstraction principle - cannot be instantiated directly.
  */
-public abstract class BuildingComponent {
+public abstract class BuildingComponent implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     protected String componentId;
     protected String name;
     protected String location;
@@ -36,6 +40,21 @@ public abstract class BuildingComponent {
     public String getName() { return name; }
     public String getLocation() { return location; }
     public boolean isActive() { return isActive; }
+
+    public void setName(String name) {
+        this.name = requireText(name, "Name");
+    }
+
+    public void setLocation(String location) {
+        this.location = requireText(location, "Location");
+    }
+
+    protected static String requireText(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+        return value.trim();
+    }
 
     @Override
     public String toString() {

@@ -1,24 +1,33 @@
 package com.smartbuilding.service;
 
 import com.smartbuilding.model.*;
+import com.smartbuilding.exception.InvalidInputException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 /**
  * AlertSystem manages all alerts and notifications.
  * Demonstrates interface usage and comprehensive alert handling.
  */
-public class AlertSystem {
+public class AlertSystem implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private List<Alert> activeAlerts;
     private List<Alert> resolvedAlerts;
-    private List<AlertListener> listeners;
+    private transient List<AlertListener> listeners;
+    private Set<String> notifiedAlertIds;
 
     public AlertSystem() {
         this.activeAlerts = new ArrayList<>();
         this.resolvedAlerts = new ArrayList<>();
         this.listeners = new ArrayList<>();
+        this.notifiedAlertIds = new HashSet<>();
     }
 
     // Overloaded method - create alert with different parameters
@@ -44,7 +53,7 @@ public class AlertSystem {
     }
 
     // Overloaded method for resolving alerts
-    public void resolveAlert(String alertId) throws Exception {
+    public void resolveAlert(String alertId) throws InvalidInputException {
         Alert alertToRemove = null;
         for (Alert alert : activeAlerts) {
             if (alert.getAlertId().equals(alertId)) {
@@ -58,7 +67,7 @@ public class AlertSystem {
             resolvedAlerts.add(alertToRemove);
             System.out.println("Alert " + alertId + " resolved");
         } else {
-            throw new Exception("Alert with ID " + alertId + " not found in active alerts");
+            throw new InvalidInputException("alertId", alertId, "active alert ID");
         }
     }
 
@@ -69,20 +78,46 @@ public class AlertSystem {
         }
     }
 
+    public Alert getActiveAlertById(String alertId) {
+        for (Alert alert : activeAlerts) {
+            if (alert.getAlertId().equals(alertId)) {
+                return alert;
+            }
+        }
+        return null;
+    }
+
+    public boolean deleteAlert(String alertId) {
+        boolean removed = activeAlerts.removeIf(alert -> alert.getAlertId().equals(alertId));
+        removed = resolvedAlerts.removeIf(alert -> alert.getAlertId().equals(alertId)) || removed;
+        notifiedAlertIds.remove(alertId);
+        return removed;
+    }
+
     public void notifyListeners() {
         System.out.println("Notifying " + listeners.size() + " listeners about " + activeAlerts.size() + " active alerts");
         for (AlertListener listener : listeners) {
             for (Alert alert : activeAlerts) {
-                if (listener.canHandleAlert(alert.getAlertType())) {
+                if (!notifiedAlertIds.contains(alert.getAlertId())
+                        && listener.canHandleAlert(alert.getAlertType())) {
                     listener.receiveAlert(alert.getAlertType(), alert.getMessage(), alert.getSeverity());
                 }
             }
         }
+        for (Alert alert : activeAlerts) {
+            notifiedAlertIds.add(alert.getAlertId());
+        }
     }
 
     public void addListener(AlertListener listener) {
-        listeners.add(listener);
-        System.out.println("New listener added: " + listener.getClass().getSimpleName());
+        if (listener != null && !listeners.contains(listener)) {
+            listeners.add(listener);
+            System.out.println("New listener added: " + listener.getClass().getSimpleName());
+        }
+    }
+
+    public void removeListener(AlertListener listener) {
+        listeners.remove(listener);
     }
 
     // Overloaded method for sending equipment failure alert
@@ -156,5 +191,10 @@ public class AlertSystem {
 
     public List<Alert> getResolvedAlerts() {
         return new ArrayList<>(resolvedAlerts);
+    }
+
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        listeners = new ArrayList<>();
     }
 }

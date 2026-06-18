@@ -1,10 +1,16 @@
 package com.smartbuilding.model;
 
+import com.smartbuilding.util.IdGenerator;
+import com.smartbuilding.exception.InvalidAccessException;
+import java.io.Serializable;
+
 /**
  * User class - base class for all system users.
  * Demonstrates hierarchical inheritance - multiple user types extend this.
  */
-public class User {
+public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     protected String userId;
     protected String username;
     protected String password;
@@ -41,12 +47,12 @@ public class User {
         return this.username.equals(username) && this.password.equals(password);
     }
 
-    public void login(String password) throws Exception {
+    public void login(String password) throws InvalidAccessException {
         if (authenticate(password)) {
             this.isLoggedIn = true;
             System.out.println("User " + username + " logged in successfully.");
         } else {
-            throw new Exception("Invalid credentials.");
+            throw new InvalidAccessException("Invalid credentials");
         }
     }
 
@@ -55,16 +61,16 @@ public class User {
         System.out.println("User " + username + " logged out.");
     }
 
-    public void updatePassword(String oldPassword, String newPassword) throws Exception {
+    public void updatePassword(String oldPassword, String newPassword) throws InvalidAccessException {
         if (!authenticate(oldPassword)) {
-            throw new Exception("Old password is incorrect.");
+            throw new InvalidAccessException("Old password is incorrect");
         }
         this.password = newPassword;
         System.out.println("Password updated successfully.");
     }
 
     protected void generateUserId(String username) {
-        this.userId = "USR" + System.currentTimeMillis() % 10000;
+        this.userId = IdGenerator.next("USR");
     }
 
     // Getters

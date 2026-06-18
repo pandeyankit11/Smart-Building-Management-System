@@ -5,6 +5,7 @@ package com.smartbuilding.exception;
  * Thrown when a user attempts unauthorized access.
  */
 public class InvalidAccessException extends Exception {
+    private static final long serialVersionUID = 1L;
     private String userId;
     private String attemptedOperation;
 
